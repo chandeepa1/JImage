@@ -1,3 +1,5 @@
+package org.JImage;
+
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
@@ -84,7 +86,7 @@ public class JImage {
     }
 
     /*
-     * Setter methods for JImageSettings
+     * Setter methods for org.JImage.JImageSettings
      */
 
     public void setZoomSensitivity(int zoomSensitivity) {

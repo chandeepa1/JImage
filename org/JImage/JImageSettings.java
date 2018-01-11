@@ -1,8 +1,10 @@
+package org.JImage;
+
 public class JImageSettings {
 
     /**
      * The following two constants defines the minimum and maximum values ZOOM_SENSITIVITY can take.
-     * These will also be used to calculate the reduced number of pixels in cropping the JImage
+     * These will also be used to calculate the reduced number of pixels in cropping the org.JImage.JImage
      */
     public static final int ZOOM_SENSITIVITY_MIN=1;
     public static final int ZOOM_SENSITIVITY_MAX=10;

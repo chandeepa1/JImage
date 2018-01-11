@@ -1,3 +1,5 @@
+package org.JImage;
+
 import java.awt.*;
 
 public class JImageMaths {

@@ -1,3 +1,5 @@
+package org.JImage;
+
 public class JImagePosition {
 
     public int TOP_LEFT_X, TOP_LEFT_Y;
