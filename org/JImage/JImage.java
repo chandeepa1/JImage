@@ -5,6 +5,9 @@ import java.awt.image.BufferedImage;
 
 public class JImage {
 
+    public static final int ZOOM_TYPE_ZOOM_IN=1;
+    public static final int ZOOM_TYPE_ZOOM_OUT=-1;
+
     private final BufferedImage image;
     private BufferedImage image_proc;
     private final JImagePosition image_position;
@@ -29,7 +32,7 @@ public class JImage {
     }
 
     public int getCurrentImageWidth() {
-        return image.getWidth();
+        return image_proc.getWidth();
     }
 
     public int getCurrentImageHeight() {
@@ -51,7 +54,7 @@ public class JImage {
         image_proc=image_scaled;
     }
 
-    public void cropCurrentImage(Point p_on_curr) throws Exception {
+    public void cropCurrentImage(Point p_on_curr, int zoomType) throws Exception {
         Point p_on_original=image_maths.getPointOnOriginal(p_on_curr);
 
         int x_affinity_left=p_on_original.x-image_position.TOP_LEFT_X;
@@ -60,11 +63,11 @@ public class JImage {
         int y_affinity_top=p_on_original.y-image_position.TOP_LEFT_Y;
         int y_affinity_bottom=image_position.BOTTOM_LEFT_Y-p_on_original.y;
 
-        int x_left_pixels_reduced=image_settings.ZOOM_SENSITIVITY*image_maths.getCropXReducer(x_affinity_left);
-        int x_right_pixels_reduced=image_settings.ZOOM_SENSITIVITY*image_maths.getCropXReducer(x_affinity_right);
+        int x_left_pixels_reduced=image_settings.ZOOM_SENSITIVITY*image_maths.getCropXReducer(x_affinity_left)*zoomType;
+        int x_right_pixels_reduced=image_settings.ZOOM_SENSITIVITY*image_maths.getCropXReducer(x_affinity_right)*zoomType;
 
-        int y_top_pixels_reduced=image_settings.ZOOM_SENSITIVITY*image_maths.getCropYReducer(y_affinity_top);
-        int y_bottom_pixels_reduced=image_settings.ZOOM_SENSITIVITY*image_maths.getCropYReducer(y_affinity_bottom);
+        int y_top_pixels_reduced=image_settings.ZOOM_SENSITIVITY*image_maths.getCropYReducer(y_affinity_top)*zoomType;
+        int y_bottom_pixels_reduced=image_settings.ZOOM_SENSITIVITY*image_maths.getCropYReducer(y_affinity_bottom)*zoomType;
 
         int new_top_left_x=image_position.TOP_LEFT_X+x_left_pixels_reduced;
         int new_top_right_x=image_position.TOP_RIGHT_X-x_right_pixels_reduced;
@@ -75,13 +78,29 @@ public class JImage {
             throw new Exception("Cannot be zoomed further");
         }
 
+        if (new_top_left_x<0) {
+            new_top_left_x=0;
+        }
+
+        if (new_top_right_x>image.getWidth()) {
+            new_top_right_x=image.getWidth();
+        }
+
+        if (new_top_left_y<0) {
+            new_top_left_y=0;
+        }
+
+        if (new_bottom_left_y>image.getHeight()) {
+            new_bottom_left_y=image.getHeight();
+        }
+
         image_position.setParams(new_top_left_x, new_top_left_y, new_top_right_x, new_bottom_left_y);
 
         image_proc=image.getSubimage(new_top_left_x, new_top_left_y, image_position.getWidth(), image_position.getHeight());
     }
 
-    public void cropZoomCurrentImage(Point p, int scaleWidth, int scaleHeight, int scaleMethod) throws Exception {
-        cropCurrentImage(p);
+    public void cropZoomCurrentImage(Point p, int zoomType, int scaleWidth, int scaleHeight, int scaleMethod) throws Exception {
+        cropCurrentImage(p, zoomType);
         setCurrentScaled(scaleWidth, scaleHeight, scaleMethod);
     }
 
