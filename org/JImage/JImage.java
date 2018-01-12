@@ -25,6 +25,14 @@ public class JImage {
     }
 
     /*
+     * Image Maths Methods
+     */
+
+    public JImageMaths getJImageMaths() {
+        return image_maths;
+    }
+
+    /*
      * Image Settings Methods
      */
 
