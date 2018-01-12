@@ -21,7 +21,15 @@ public class JImage {
         image_position=new JImagePosition(0, 0, image.getWidth(), image.getHeight());
 
         image_maths=new JImageMaths(this);
-        image_settings=new JImageSettings();
+        image_settings=new JImageSettings(this);
+    }
+
+    /*
+     * Image Settings Methods
+     */
+
+    public JImageSettings getJImageSettings() {
+        return image_settings;
     }
 
     /*
@@ -99,8 +107,50 @@ public class JImage {
         image_proc=image.getSubimage(new_top_left_x, new_top_left_y, image_position.getWidth(), image_position.getHeight());
     }
 
+    public void panCurrentImage(Point drag_amount_on_curr) {
+        Point drag_amount_on_original=image_maths.getDragOnOriginal(drag_amount_on_curr);
+
+        int reduced_drag_x=image_maths.geDragXReduced(drag_amount_on_original.x);
+        int reduced_drag_y=image_maths.getDragYReduced(drag_amount_on_original.y);
+
+        int new_top_left_x=image_position.TOP_LEFT_X+reduced_drag_x;
+        int new_top_right_x=image_position.TOP_RIGHT_X+reduced_drag_x;
+
+        int new_top_left_y=image_position.TOP_LEFT_Y+reduced_drag_y;
+        int new_bottom_left_y=image_position.BOTTOM_LEFT_Y+reduced_drag_y;
+
+        if (new_top_left_x<0) {
+            new_top_left_x=0;
+            new_top_right_x=image_position.TOP_RIGHT_X;
+        }
+
+        if (new_top_right_x>image.getWidth()) {
+            new_top_left_x=image_position.TOP_LEFT_X;
+            new_top_right_x=image.getWidth();
+        }
+
+        if (new_top_left_y<0) {
+            new_top_left_y=0;
+            new_bottom_left_y=image_position.BOTTOM_LEFT_Y;
+        }
+
+        if (new_bottom_left_y>image.getHeight()) {
+            new_top_left_y=image_position.TOP_LEFT_Y;
+            new_bottom_left_y=image.getHeight();
+        }
+
+        image_position.setParams(new_top_left_x, new_top_left_y, new_top_right_x, new_bottom_left_y);
+
+        image_proc=image.getSubimage(new_top_left_x, new_top_left_y, image_position.getWidth(), image_position.getHeight());
+    }
+
     public void cropZoomCurrentImage(Point p, int zoomType, int scaleWidth, int scaleHeight, int scaleMethod) throws Exception {
         cropCurrentImage(p, zoomType);
+        setCurrentScaled(scaleWidth, scaleHeight, scaleMethod);
+    }
+
+    public void panZoomCurrentImage(Point p,  int scaleWidth, int scaleHeight, int scaleMethod) {
+        panCurrentImage(p);
         setCurrentScaled(scaleWidth, scaleHeight, scaleMethod);
     }
 
@@ -110,6 +160,10 @@ public class JImage {
 
     public void setZoomSensitivity(int zoomSensitivity) {
         image_settings.setZoomSensitivity(zoomSensitivity);
+    }
+
+    public void setPanSensitivity(int panSensitivity) {
+        image_settings.setPanSensitivity(panSensitivity);
     }
 
     /*

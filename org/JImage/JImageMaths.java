@@ -28,12 +28,53 @@ public class JImageMaths {
         return new Point(x_on_original, y_on_original);
     }
 
+    public Point getDragOnOriginal(Point p) {
+        JImagePosition curr_position=image.getCurrentPositionOnOriginal();
+
+        int unscaled_width=curr_position.getWidth();
+        int unscaled_height=curr_position.getHeight();
+
+        int scaled_width=image.getCurrentImageWidth();
+        int scaled_height=image.getCurrentImageHeight();
+
+        int unscaled_x=mapVal(p.x, 0, scaled_width, 0, unscaled_width);
+        int unscaled_y=mapVal(p.y, 0, scaled_height, 0, unscaled_height);
+
+        return new Point(unscaled_x, unscaled_y);
+    }
+
     public int getCropXReducer(int x_affinity) {
-        return mapVal(x_affinity, 0, image.getOriginalImageWidth(), JImageSettings.ZOOM_SENSITIVITY_MIN, JImageSettings.ZOOM_SENSITIVITY_MAX);
+        JImageSettings image_settings=image.getJImageSettings();
+        return mapVal(x_affinity, 0, image.getOriginalImageWidth(), image_settings.ZOOM_SENSITIVITY_MIN, image_settings.ZOOM_SENSITIVITY_MAX);
     }
 
     public int getCropYReducer(int y_affinity) {
-        return mapVal(y_affinity, 0, image.getOriginalImageHeight(), JImageSettings.ZOOM_SENSITIVITY_MIN, JImageSettings.ZOOM_SENSITIVITY_MAX);
+        JImageSettings image_settings=image.getJImageSettings();
+        return mapVal(y_affinity, 0, image.getOriginalImageHeight(), image_settings.ZOOM_SENSITIVITY_MIN, image_settings.ZOOM_SENSITIVITY_MAX);
+    }
+
+    public int geDragXReduced(int drag_x) {
+        if (drag_x==0) {
+            return 0;
+        }
+
+        JImageSettings image_settings=image.getJImageSettings();
+        int pan_sensitivity_min=image_settings.PAN_SENSITIVITY_MIN*drag_x/Math.abs(drag_x);
+        int pan_sensitivity_max=image_settings.PAN_SENSITIVITY_MAX*drag_x/Math.abs(drag_x);
+
+        return mapVal(drag_x, 0, image.getOriginalImageWidth(), pan_sensitivity_min, pan_sensitivity_max);
+    }
+
+    public int getDragYReduced(int drag_y) {
+        if (drag_y==0) {
+            return 0;
+        }
+
+        JImageSettings image_settings=image.getJImageSettings();
+        int pan_sensitivity_min=image_settings.PAN_SENSITIVITY_MIN*drag_y/Math.abs(drag_y);
+        int pan_sensitivity_max=image_settings.PAN_SENSITIVITY_MAX*drag_y/Math.abs(drag_y);
+
+        return mapVal(drag_y, 0, image.getOriginalImageHeight(), pan_sensitivity_min, pan_sensitivity_max);
     }
 
     /*
