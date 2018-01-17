@@ -28,6 +28,24 @@ public class JImageMaths {
         return new Point(x_on_original, y_on_original);
     }
 
+    public JImagePoint getJImagePointOnOriginal(JImagePoint p) {
+        JImagePosition curr_position=image.getCurrentPositionOnOriginal();
+
+        double unscaled_width=curr_position.getWidth();
+        double unscaled_height=curr_position.getHeight();
+
+        double scaled_width=image.getCurrentImageWidth();
+        double scaled_height=image.getCurrentImageHeight();
+
+        double unscaled_x=mapVal(p.x, 0.0, scaled_width, 0.0, unscaled_width);
+        double unscaled_y=mapVal(p.y, 0.0, scaled_height, 0.0, unscaled_height);
+
+        double x_on_original=curr_position.TOP_LEFT_X+unscaled_x;
+        double y_on_original=curr_position.TOP_LEFT_Y+unscaled_y;
+
+        return new JImagePoint(x_on_original, y_on_original);
+    }
+
     public Point getDragOnOriginal(Point p) {
         JImagePosition curr_position=image.getCurrentPositionOnOriginal();
 
@@ -82,5 +100,13 @@ public class JImageMaths {
      */
     public int mapVal(int x, int in_min, int in_max, int out_min, int out_max) {
         return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+    }
+
+    public double mapVal(double x, double in_min, double in_max, double out_min, double out_max) {
+        return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+    }
+
+    public double mapValInverse(double x, double in_min, double in_max, double out_min, double out_max) {
+        return (x - in_min) * (in_max - in_min) / (out_max - out_min) + out_min;
     }
 }
