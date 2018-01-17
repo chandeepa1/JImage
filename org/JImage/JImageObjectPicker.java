@@ -66,7 +66,7 @@ public class JImageObjectPicker {
         }
     }
 
-    private void selectSinglePoint(JImagePoint p, int radius_x, Graphics g) {
+    private void selectSinglePoint(JImagePoint p, int radius_x) {
         JImagePoint p_on_original=image_maths.getJImagePointOnOriginal(p);
 
         int radius_y=image_maths.mapVal(radius_x, 0, image.getCurrentImageWidth(), 0, image.getCurrentImageHeight());
@@ -87,13 +87,13 @@ public class JImageObjectPicker {
     }
 
     /**
-     * This method draws a single circle shaped point using the Graphics object provided
+     * This method draws a single circle shaped point using the Graphics object provided.
+     * This method needs the user to call repaint() on the container of the image
      * @param p The point at which the object is selected on your component of the image(according to its dimensions)
      * @param radius The radius of the circle on your component of the image(according to its dimensions)
      */
-    public void drawSinglePoint(JImagePoint p, int radius, Graphics g) {
-        selectSinglePoint(p, radius, g);
-        paintComponent(g);
+    public void drawSinglePoint(JImagePoint p, int radius) {
+        selectSinglePoint(p, radius);
     }
 
     /**
@@ -105,7 +105,8 @@ public class JImageObjectPicker {
     }
 
     /**
-     * Removes an selected object. This method needs the user to call repaint() on the container of the image
+     * Removes an selected object.
+     * This method needs the user to call repaint() on the container of the image
      * @param index Index of the object in the array
      */
     public void removeObject(int index) {
@@ -113,7 +114,8 @@ public class JImageObjectPicker {
     }
 
     /**
-     * Removes all of the selected objects. This method needs the user to call repaint() on the container of the image
+     * Removes all of the selected objects.
+     * This method needs the user to call repaint() on the container of the image
      */
     public void resetAllSelections() {
         objects.clear();
