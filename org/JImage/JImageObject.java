@@ -1,6 +1,8 @@
 package org.JImage;
 
 import java.awt.*;
+import java.util.HashMap;
+import java.util.Map;
 
 public class JImageObject {
 
@@ -31,6 +33,28 @@ public class JImageObject {
         this.object_type = object_type;
         this.object_dimensions = object_dimensions;
         this.object_color = object_color;
+    }
+
+    /**
+     * This method returns all the properties of this object.
+     * @return A Hashmap containing all the properties of this object.
+     */
+    public Map<String, String> getObjectProperties() {
+        Map<String, String> props=new HashMap<>();
+        switch (object_type) {
+            case JIMAGE_OBJECT_CIRCLE:
+                props.put("type", "circle");
+                props.put("real_center_x", String.valueOf(point.x));
+                props.put("real_center_y", String.valueOf(point.y));
+                props.put("radius", String.valueOf(object_dimensions.width/2));
+
+                double enclosed_area=Math.PI*(object_dimensions.width/2)*(object_dimensions.height/2);
+                props.put("enclosed_area", String.valueOf(enclosed_area));
+
+                break;
+            //Other object types goes here
+        }
+        return props;
     }
 
     /**

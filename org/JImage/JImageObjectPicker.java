@@ -8,12 +8,14 @@ import java.util.List;
 public class JImageObjectPicker {
 
     private final JImage image;
+    private final Color object_select_color;
     private final JImageMaths image_maths;
 
     private List<JImageObject> objects;
 
-    public JImageObjectPicker(JImage image) {
+    public JImageObjectPicker(JImage image, Color object_select_color) {
         this.image = image;
+        this.object_select_color = object_select_color;
 
         image_maths=image.getJImageMaths();
         objects=new ArrayList();
@@ -99,6 +101,30 @@ public class JImageObjectPicker {
     /**
      * Methods regarding the currently selected points
      */
+
+    /**
+     * Selects the object specified by the index given
+     * This method needs the user to call repaint() on the container of the image
+     * @param index Index of the object to be chosen.
+     */
+    public void selectObject(int index) {
+        objects.get(index).object_color=object_select_color;
+    }
+
+    /**
+     * Deselects the object specified by the index given
+     * This method needs the user to call repaint() on the container of the image
+     * @param index Index of the object to be chosen.
+     */
+    public void deselectObject(int index) {
+        objects.get(index).object_color=JImageObject.JIMAGE_OBJECT_COLOR_DEFAULT;
+    }
+
+    public void deselectAll() {
+        for (int i=0;i<objects.size();i++) {
+            objects.get(i).object_color=JImageObject.JIMAGE_OBJECT_COLOR_DEFAULT;
+        }
+    }
 
     public List<JImageObject> getSelectedObjects() {
         return objects;
