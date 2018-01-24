@@ -35,7 +35,7 @@ public class JImageObjectPicker {
         for (JImageObject object : objects) {
             JImagePosition image_curr_position = image.getCurrentPositionOnOriginal();
 
-            if (object.object_type == JImageObject.JIMAGE_OBJECT_CIRCLE) {
+            if (object.object_type == JImageObject.JIMAGE_OBJECT_ELLIPSE) {
                 if (object.point.x >= image_curr_position.TOP_LEFT_X && object.point.x <= image_curr_position.TOP_RIGHT_X && object.point.y >= image_curr_position.TOP_LEFT_Y && object.point.y <= image_curr_position.BOTTOM_LEFT_Y) {
                     double unscaled_center_x = object.point.x - image_curr_position.TOP_LEFT_X;
                     double unscaled_center_y = object.point.y - image_curr_position.TOP_LEFT_Y;
@@ -61,14 +61,19 @@ public class JImageObjectPicker {
                     double zoomed_scaled_height = object.object_dimensions.height;
                     double current_scaled_height = image_maths.mapValInverse(zoomed_scaled_height, 0.0, (double) image.getOriginalImageHeight(), 0.0, (double) image_curr_position.getHeight());
 
-                    g2d.setColor(object.object_color);
+                    if (object.object_selected) {
+                        g2d.setColor(object_select_color);
+                    }
+                    else {
+                        g2d.setColor(object.object_color);
+                    }
                     g2d.draw(new Ellipse2D.Double(current_image_start_x, current_image_start_y, current_scaled_width, current_scaled_height));
                 }
             }
         }
     }
 
-    private void selectSinglePoint(JImagePoint p, int radius_x) {
+    private void selectSinglePoint(JImagePoint p, int radius_x, Color obj_color) {
         JImagePoint p_on_original=image_maths.getJImagePointOnOriginal(p);
 
         int radius_y=image_maths.mapVal(radius_x, 0, image.getCurrentImageWidth(), 0, image.getCurrentImageHeight());
@@ -84,7 +89,7 @@ public class JImageObjectPicker {
         double obj_diameter_height=2.0*image_maths.mapVal((double)radius_y, 0.0, (double)image.getCurrentImageHeight(), 0.0, (double)image.getOriginalImageHeight());
         JImageDimension obj_dimensions=new JImageDimension(obj_diameter_width, obj_diameter_height);
 
-        JImageObject object_new=new JImageObject(p_on_original, JImageObject.JIMAGE_OBJECT_CIRCLE, obj_dimensions, JImageObject.JIMAGE_OBJECT_COLOR_DEFAULT);
+        JImageObject object_new=new JImageObject(p_on_original, JImageObject.JIMAGE_OBJECT_ELLIPSE, obj_dimensions, obj_color);
         objects.add(object_new);
     }
 
@@ -93,9 +98,10 @@ public class JImageObjectPicker {
      * This method needs the user to call repaint() on the container of the image
      * @param p The point at which the object is selected on your component of the image(according to its dimensions)
      * @param radius The radius of the circle on your component of the image(according to its dimensions)
+*      @param obj_color The color of the ellipse that should be drawn
      */
-    public void drawSinglePoint(JImagePoint p, int radius) {
-        selectSinglePoint(p, radius);
+    public void drawSinglePoint(JImagePoint p, int radius, Color obj_color) {
+        selectSinglePoint(p, radius, obj_color);
     }
 
     /**
@@ -108,7 +114,7 @@ public class JImageObjectPicker {
      * @param index Index of the object to be chosen.
      */
     public void selectObject(int index) {
-        objects.get(index).object_color=object_select_color;
+        objects.get(index).object_selected=true;
     }
 
     /**
@@ -117,17 +123,48 @@ public class JImageObjectPicker {
      * @param index Index of the object to be chosen.
      */
     public void deselectObject(int index) {
-        objects.get(index).object_color=JImageObject.JIMAGE_OBJECT_COLOR_DEFAULT;
+        objects.get(index).object_selected=false;
     }
 
     public void deselectAll() {
         for (int i=0;i<objects.size();i++) {
-            objects.get(i).object_color=JImageObject.JIMAGE_OBJECT_COLOR_DEFAULT;
+            objects.get(i).object_selected=false;
         }
+    }
+
+    /**
+     * Getter methods
+     */
+
+    /**
+     * This returns the JImageObject at the specified index
+     * @param index Index of the JImageObject to return
+     * @return JImageObject at the given position
+     */
+
+    public JImageObject getObjectAt(int index) {
+        return objects.get(index);
+    }
+
+    public int getObjectCount() {
+        return objects.size();
     }
 
     public List<JImageObject> getSelectedObjects() {
         return objects;
+    }
+
+    /**
+     * Setter methods
+     */
+
+    /**
+     * Sets the JImageObject at the given index
+     * @param index The index of the JimageObject to set
+     * @param object JImageObject to set.
+     */
+    public void setObjectAt(int index, JImageObject object) {
+        objects.set(index, object);
     }
 
     /**

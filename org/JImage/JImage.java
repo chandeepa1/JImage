@@ -10,7 +10,7 @@ public class JImage {
 
     private final BufferedImage image;
     private BufferedImage image_proc;
-    private final JImagePosition image_position;
+    private JImagePosition image_position;
     private final JImageMaths image_maths;
     private final JImageSettings image_settings;
 
@@ -152,6 +152,10 @@ public class JImage {
         image_proc=image.getSubimage(new_top_left_x, new_top_left_y, image_position.getWidth(), image_position.getHeight());
     }
 
+    public void setPositionOnOriginal(JImagePosition new_position) {
+        image_position=new_position;
+    }
+
     public void cropZoomCurrentImage(Point p, int zoomType, int scaleWidth, int scaleHeight, int scaleMethod) throws Exception {
         cropCurrentImage(p, zoomType);
         setCurrentScaled(scaleWidth, scaleHeight, scaleMethod);
@@ -159,6 +163,11 @@ public class JImage {
 
     public void panZoomCurrentImage(Point p,  int scaleWidth, int scaleHeight, int scaleMethod) {
         panCurrentImage(p);
+        setCurrentScaled(scaleWidth, scaleHeight, scaleMethod);
+    }
+
+    public void setPositionZoomCurrentImage(JImagePosition new_position, int scaleWidth, int scaleHeight, int scaleMethod) {
+        setPositionOnOriginal(new_position);
         setCurrentScaled(scaleWidth, scaleHeight, scaleMethod);
     }
 
