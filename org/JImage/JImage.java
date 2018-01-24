@@ -60,7 +60,7 @@ public class JImage {
     }
 
     public void setCurrentScaled(int width, int height, int SCALE_METHOD) {
-        Image obj_scaled=image_proc.getScaledInstance(width, height, SCALE_METHOD);
+        Image obj_scaled=image.getSubimage(image_position.TOP_LEFT_X, image_position.TOP_LEFT_Y, image_position.getWidth(), image_position.getHeight()).getScaledInstance(width, height, SCALE_METHOD);
 
         BufferedImage image_scaled=new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics_scaled=image_scaled.createGraphics();
