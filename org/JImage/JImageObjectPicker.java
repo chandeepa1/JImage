@@ -85,7 +85,13 @@ public class JImageObjectPicker {
                     int y=(int)Math.round(edge.y);
 
                     if (x >= image_curr_position.TOP_LEFT_X && x <= image_curr_position.TOP_RIGHT_X && y >= image_curr_position.TOP_LEFT_Y && y <= image_curr_position.BOTTOM_LEFT_Y) {
-                        g2d.drawLine(x, y, x, y);
+                        int unscaled_x=x-image_curr_position.TOP_LEFT_X;
+                        int unscaled_y=y-image_curr_position.TOP_LEFT_Y;
+
+                        int scaled_x=image_maths.mapVal(unscaled_x, 0, image_curr_position.getWidth(), 0, image.getCurrentImageWidth());
+                        int scaled_y=image_maths.mapVal(unscaled_y, 0, image_curr_position.getHeight(), 0, image.getCurrentImageHeight());
+
+                        g2d.drawLine(scaled_x, scaled_y, scaled_x+1, scaled_y+1);
                     }
                 }
             }
@@ -112,7 +118,7 @@ public class JImageObjectPicker {
         objects.add(object_new);
     }
 
-    private void selectArbitaryObject(JImageIntelligence image_intelli, JImagePoint seed_point, int edge_object_color_ratio, Color obj_color) {
+    private void selectArbitaryObject(JImageIntelligence image_intelli, JImagePoint seed_point, double edge_object_color_ratio, Color obj_color) {
         JImagePoint seed_point_on_original=image_maths.getJImagePointOnOriginal(seed_point);
 
         /**
@@ -145,6 +151,19 @@ public class JImageObjectPicker {
      */
     public void drawSinglePoint(JImagePoint p, int radius, Color obj_color) {
         selectSinglePoint(p, radius, obj_color);
+    }
+
+    /**
+     * This method detects an object on the image using seed fill methods and draws a border on the edges of the object detected.
+     * It continues to search for an object until the boundaries of the image are reached and sets the edges on the boundaries if not any edge is found.
+     * This method needs the user to call repaint() on the container of the image
+     * @param image_intelli JImageIntelligence object initiated on the respective image by the user. This JImage object should be the same object which was used to render the image on your container
+     * @param seed_point The seed point where the user clicked(where the search of the object should be started.
+     * @param edge_object_color_ratio The ratio of the grey value of the edge to the grey value of the object's contents
+     * @param obj_color The color in which the edges should be drawn on the image
+     */
+    public void drawArbitaryObject(JImageIntelligence image_intelli, JImagePoint seed_point, double edge_object_color_ratio, Color obj_color) {
+        selectArbitaryObject(image_intelli, seed_point, edge_object_color_ratio, obj_color);
     }
 
     /**

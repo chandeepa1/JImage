@@ -58,6 +58,7 @@ public class JImageIntelligence {
         return image_backremoved;
     }
 
+    private int pixel_status[][];
     private int edges[][];
 
     /**
@@ -73,11 +74,13 @@ public class JImageIntelligence {
         BufferedImage image_gray=getGrayScale();
 
         int raster[][]=new int[image_original.getWidth()][image_original.getHeight()];
-        edges=new int[image_original.getWidth()][image_original.getHeight()];
+        pixel_status=new int[raster.length][raster[0].length];
+        edges=new int[raster.length][raster[0].length];
 
         for (int x=0;x<image_original.getWidth();x++) {
             for (int y=0;y<image_original.getHeight();y++) {
                 raster[x][y]=image_gray.getRGB(x, y);
+                pixel_status[x][y]=0;
                 edges[x][y]=0;
             }
         }
@@ -118,12 +121,12 @@ public class JImageIntelligence {
         double color_diff_ratio=color_diff/255;
 
         //Check whether the current pixel has been visited earlier
-        if (raster[x][y]==raster[(int)Math.round(seed_point.x)][(int)Math.round(seed_point.y)]) {
+        if (pixel_status[x][y]==1) {
             return;
         }
 
         //Mark the cell as visited
-        raster[x][y]=raster[(int)Math.round(seed_point.x)][(int)Math.round(seed_point.y)];
+        pixel_status[x][y]=1;
 
         if (color_diff_ratio>edge_object_color_ratio || x==0 || y==0 || x==raster.length-1 || y==raster[0].length-1) {
             edges[x][y]=1;

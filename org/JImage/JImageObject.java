@@ -61,6 +61,15 @@ public class JImageObject {
 
                 break;
             //Other object types goes here
+            case JIMAGE_OBJECT_DETECT:
+                props.put("type", "detected_object");
+                props.put("real_seed_point_x", String.valueOf(point.x));
+                props.put("real_seed_point_y", String.valueOf(point.y));
+
+                //TODO: Add dimensions, area and other related properties for a detected object here
+
+                props.putAll(object_custom_props);
+                break;
         }
         return props;
     }
@@ -152,6 +161,9 @@ public class JImageObject {
                 case "radius_vertical":
                     object_dimensions.height=Double.parseDouble(value.toString())*2.0;
                     break;
+                //Following properties are for detect
+                case "edges":
+                    object_custom_props.put(key, value);
             }
         }
     }
