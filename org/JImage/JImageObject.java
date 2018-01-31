@@ -13,8 +13,10 @@ public class JImageObject {
 
     /**
      * Following constants are the types of objects which sorround the point clicked by the user.
+     *Numbers between 0 and 1000 are left off to declare other desired types
      */
     public static final int JIMAGE_OBJECT_ELLIPSE=0;
+    public static final int JIMAGE_OBJECT_DETECT=1000;
 
     /**
      * Following point is the center of the object. This contains its (x,y) coordinates.

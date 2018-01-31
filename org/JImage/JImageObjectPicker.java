@@ -70,6 +70,25 @@ public class JImageObjectPicker {
                     g2d.draw(new Ellipse2D.Double(current_image_start_x, current_image_start_y, current_scaled_width, current_scaled_height));
                 }
             }
+            else if (object.object_type == JImageObject.JIMAGE_OBJECT_DETECT) {
+                List<JImagePoint> edges=(List<JImagePoint>)object.getObjectProperties().get("edges");
+
+                if (object.object_selected) {
+                    g2d.setColor(object_select_color);
+                }
+                else {
+                    g2d.setColor(object.object_color);
+                }
+
+                for (JImagePoint edge : edges) {
+                    int x=(int)Math.round(edge.x);
+                    int y=(int)Math.round(edge.y);
+
+                    if (x >= image_curr_position.TOP_LEFT_X && x <= image_curr_position.TOP_RIGHT_X && y >= image_curr_position.TOP_LEFT_Y && y <= image_curr_position.BOTTOM_LEFT_Y) {
+                        g2d.drawLine(x, y, x, y);
+                    }
+                }
+            }
         }
     }
 
@@ -90,6 +109,30 @@ public class JImageObjectPicker {
         JImageDimension obj_dimensions=new JImageDimension(obj_diameter_width, obj_diameter_height);
 
         JImageObject object_new=new JImageObject(p_on_original, JImageObject.JIMAGE_OBJECT_ELLIPSE, obj_dimensions, obj_color);
+        objects.add(object_new);
+    }
+
+    private void selectArbitaryObject(JImageIntelligence image_intelli, JImagePoint seed_point, int edge_object_color_ratio, Color obj_color) {
+        JImagePoint seed_point_on_original=image_maths.getJImagePointOnOriginal(seed_point);
+
+        /**
+         * Obtain edge pixels and add a object custom property with list for pixels at edges
+         * TODO: Add some method in JImageIntelligence to check whether object exists in the given boundaries
+         */
+
+        int raster_edges[][]=image_intelli.getEdgesFromSeed(seed_point_on_original, edge_object_color_ratio);
+        List<JImagePoint> objprop_raster_edges=new ArrayList<>();
+        for (int x = 0; x < raster_edges.length; x++) {
+            for (int y = 0; y < raster_edges[x].length; y++) {
+                if (raster_edges[x][y] == 1) {
+                    objprop_raster_edges.add(new JImagePoint(x, y));
+                }
+            }
+        }
+
+        JImageObject object_new=new JImageObject(seed_point_on_original, JImageObject.JIMAGE_OBJECT_DETECT, new JImageDimension(0.0, 0.0), obj_color);
+        object_new.setProperty("edges", objprop_raster_edges);
+
         objects.add(object_new);
     }
 
@@ -131,6 +174,14 @@ public class JImageObjectPicker {
             objects.get(i).object_selected=false;
         }
     }
+
+    /**
+     * Selection Checkers
+     */
+
+    /*public boolean isPointSelected(Point p, int SEARCH_MODE) {
+
+    }*/
 
     /**
      * Getter methods

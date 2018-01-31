@@ -197,4 +197,17 @@ public class JImage {
     public int getOriginalImageHeight() {
         return image.getHeight();
     }
+
+    public void setImageFromPosition(BufferedImage image_to_set, JImagePosition position) throws Exception {
+        if (position.TOP_LEFT_X<0 || position.TOP_RIGHT_X>image.getWidth() || position.TOP_LEFT_Y<0 || position.BOTTOM_LEFT_Y>image.getHeight()) {
+            throw new Exception("Position out of bounds of the original image");
+        }
+        else {
+            image_proc=image_to_set;
+        }
+    }
+
+    public BufferedImage getImageFromPosition(JImagePosition position) {
+        return image.getSubimage(position.TOP_LEFT_X, position.TOP_LEFT_Y, position.getWidth(), position.getHeight());
+    }
 }
