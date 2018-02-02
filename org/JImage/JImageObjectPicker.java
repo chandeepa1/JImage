@@ -2,8 +2,10 @@ package org.JImage;
 
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class JImageObjectPicker {
 
@@ -71,7 +73,24 @@ public class JImageObjectPicker {
                 }
             }
             else if (object.object_type == JImageObject.JIMAGE_OBJECT_DETECT) {
-                List<JImagePoint> edges=(List<JImagePoint>)object.getObjectProperties().get("edges");
+                Map<String, Object> obj_props=object.getObjectProperties();
+                JImageIntelligence image_intelli=(JImageIntelligence)obj_props.get("intelli_object");
+
+                double unscaled_x=object.point.x-image_curr_position.TOP_LEFT_X;
+                double unscaled_y=object.point.y-image_curr_position.TOP_LEFT_Y;
+
+                int scaled_x=(int)Math.round(image_maths.mapVal(unscaled_x, 0, image_curr_position.getWidth(), 0, image.getCurrentImageWidth()));
+                int scaled_y=(int)Math.round(image_maths.mapVal(unscaled_y, 0, image_curr_position.getHeight(), 0, image.getCurrentImageHeight()));
+
+                int raster_edges[][]=image_intelli.getEdgesFromSeed(image.getCurrentImage(), new JImagePoint(scaled_x, scaled_y), Double.parseDouble(obj_props.get("edge_object_color_ratio").toString()));
+                List<JImagePoint> edges=new ArrayList<>();
+                for (int x = 0; x < raster_edges.length; x++) {
+                    for (int y = 0; y < raster_edges[x].length; y++) {
+                        if (raster_edges[x][y] == 1) {
+                            edges.add(new JImagePoint(x, y));
+                        }
+                    }
+                }
 
                 if (object.object_selected) {
                     g2d.setColor(object_select_color);
@@ -81,17 +100,11 @@ public class JImageObjectPicker {
                 }
 
                 for (JImagePoint edge : edges) {
-                    int x=(int)Math.round(edge.x);
-                    int y=(int)Math.round(edge.y);
-
-                    if (x >= image_curr_position.TOP_LEFT_X && x <= image_curr_position.TOP_RIGHT_X && y >= image_curr_position.TOP_LEFT_Y && y <= image_curr_position.BOTTOM_LEFT_Y) {
-                        int unscaled_x=x-image_curr_position.TOP_LEFT_X;
-                        int unscaled_y=y-image_curr_position.TOP_LEFT_Y;
-
-                        int scaled_x=image_maths.mapVal(unscaled_x, 0, image_curr_position.getWidth(), 0, image.getCurrentImageWidth());
-                        int scaled_y=image_maths.mapVal(unscaled_y, 0, image_curr_position.getHeight(), 0, image.getCurrentImageHeight());
-
-                        g2d.drawLine(scaled_x, scaled_y, scaled_x+1, scaled_y+1);
+                    JImagePoint edge_on_original=image_maths.getJImagePointOnOriginal(edge);
+                    if (edge_on_original.x >= image_curr_position.TOP_LEFT_X && edge_on_original.x <= image_curr_position.TOP_RIGHT_X && edge_on_original.y >= image_curr_position.TOP_LEFT_Y && edge_on_original.y <= image_curr_position.BOTTOM_LEFT_Y) {
+                        int int_edge_x=(int)Math.round(edge.x);
+                        int int_edge_y=(int)Math.round(edge.y);
+                        g2d.drawLine(int_edge_x, int_edge_y, int_edge_x, int_edge_y);
                     }
                 }
             }
@@ -118,26 +131,23 @@ public class JImageObjectPicker {
         objects.add(object_new);
     }
 
-    private void selectArbitaryObject(JImageIntelligence image_intelli, JImagePoint seed_point, double edge_object_color_ratio, Color obj_color) {
+    private void selectArbitraryObject(JImageIntelligence image_intelli, JImagePoint seed_point, double edge_object_color_ratio, Color obj_color) {
         JImagePoint seed_point_on_original=image_maths.getJImagePointOnOriginal(seed_point);
 
         /**
-         * Obtain edge pixels and add a object custom property with list for pixels at edges
          * TODO: Add some method in JImageIntelligence to check whether object exists in the given boundaries
          */
 
-        int raster_edges[][]=image_intelli.getEdgesFromSeed(seed_point_on_original, edge_object_color_ratio);
-        List<JImagePoint> objprop_raster_edges=new ArrayList<>();
-        for (int x = 0; x < raster_edges.length; x++) {
-            for (int y = 0; y < raster_edges[x].length; y++) {
-                if (raster_edges[x][y] == 1) {
-                    objprop_raster_edges.add(new JImagePoint(x, y));
-                }
-            }
-        }
-
         JImageObject object_new=new JImageObject(seed_point_on_original, JImageObject.JIMAGE_OBJECT_DETECT, new JImageDimension(0.0, 0.0), obj_color);
-        object_new.setProperty("edges", objprop_raster_edges);
+        object_new.setProperty("intelli_object", image_intelli);
+        object_new.setProperty("edge_object_color_ratio", String.valueOf(edge_object_color_ratio));
+
+        image_intelli.getEdgesFromSeed(image.getOriginalImage(), seed_point_on_original, edge_object_color_ratio);
+        Map<String, Object> detected_obj_props=image_intelli.getLastProperties();
+        Object keys[]=detected_obj_props.keySet().toArray();
+        for (Object key : keys) {
+            object_new.setProperty(key.toString(), detected_obj_props.get(key.toString()));
+        }
 
         objects.add(object_new);
     }
@@ -162,8 +172,8 @@ public class JImageObjectPicker {
      * @param edge_object_color_ratio The ratio of the grey value of the edge to the grey value of the object's contents
      * @param obj_color The color in which the edges should be drawn on the image
      */
-    public void drawArbitaryObject(JImageIntelligence image_intelli, JImagePoint seed_point, double edge_object_color_ratio, Color obj_color) {
-        selectArbitaryObject(image_intelli, seed_point, edge_object_color_ratio, obj_color);
+    public void drawArbitraryObject(JImageIntelligence image_intelli, JImagePoint seed_point, double edge_object_color_ratio, Color obj_color) {
+        selectArbitraryObject(image_intelli, seed_point, edge_object_color_ratio, obj_color);
     }
 
     /**

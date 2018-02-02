@@ -161,8 +161,8 @@ public class JImageObject {
                 case "radius_vertical":
                     object_dimensions.height=Double.parseDouble(value.toString())*2.0;
                     break;
-                //Following properties are for detect
-                case "edges":
+                // Everything else is set as a custom property
+                default:
                     object_custom_props.put(key, value);
             }
         }
