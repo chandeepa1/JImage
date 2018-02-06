@@ -70,7 +70,7 @@ public class JImage {
         image_proc=image_scaled;
     }
 
-    public void cropCurrentImage(Point p_on_curr, int zoomType) throws Exception {
+    public void cropCurrentImage(Point p_on_curr, int zoomType, boolean maintainAR) throws Exception {
         Point p_on_original=image_maths.getPointOnOriginal(p_on_curr);
 
         int x_affinity_left=p_on_original.x-image_position.TOP_LEFT_X;
@@ -111,6 +111,73 @@ public class JImage {
         }
 
         image_position.setParams(new_top_left_x, new_top_left_y, new_top_right_x, new_bottom_left_y);
+
+        // If aspect ratio is to be maintained
+        if (maintainAR) {
+            int old_width=image.getWidth();
+            int old_height=image.getHeight();
+
+            if (old_width>old_height) {
+                double hw_ratio=(double)old_height/(double)old_width;
+                int new_height=(int)Math.round(image_position.getWidth()*hw_ratio);
+                int new_height_reducer=(image_position.getHeight()-new_height)/2;
+
+                new_top_left_y=image_position.TOP_LEFT_Y+new_height_reducer;
+                new_bottom_left_y=image_position.BOTTOM_LEFT_Y-new_height_reducer;
+
+                if (new_top_left_y>=image.getHeight() || new_bottom_left_y<0) {
+                    throw new Exception("Cannot be zoomed further maintaining aspect ratio");
+                }
+                else {
+                    if (new_top_left_y<0) {
+                        new_bottom_left_y+=Math.abs(new_top_left_y);
+                        if (new_bottom_left_y>=image.getHeight()) {
+                            new_bottom_left_y=image.getHeight();
+                        }
+                        new_top_left_y=0;
+                    }
+
+                    if (new_bottom_left_y>=image.getHeight()) {
+                        new_top_left_y-=Math.abs(new_bottom_left_y-image.getHeight());
+                        if (new_top_left_y<0) {
+                            new_top_left_y=0;
+                        }
+                        new_bottom_left_y=image.getHeight();
+                    }
+                }
+            }
+            else {
+                double wh_ratio=(double)old_width/(double)old_height;
+                int new_width=(int)Math.round(image_position.getHeight()*wh_ratio);
+                int new_width_reducer=(image_position.getWidth()-new_width)/2;
+
+                new_top_left_x=image_position.TOP_LEFT_X+new_width_reducer;
+                new_top_right_x=image_position.TOP_RIGHT_X-new_width_reducer;
+
+                if (new_top_left_x>=image.getWidth() || new_top_right_x<0) {
+                    throw new Exception("Cannot be zoomed further maintaining aspect ratio");
+                }
+                else {
+                    if (new_top_left_x<0) {
+                        new_top_right_x+=Math.abs(new_top_left_x);
+                        if (new_top_right_x>=image.getWidth()) {
+                            new_top_right_x=image.getWidth();
+                        }
+                        new_top_left_x=0;
+                    }
+
+                    if (new_top_right_x>=image.getWidth()) {
+                        new_top_left_x-=Math.abs(new_top_right_x-image.getWidth());
+                        if (new_top_left_x<0) {
+                            new_top_left_x=0;
+                        }
+                        new_top_right_x=image.getWidth();
+                    }
+                }
+            }
+
+            image_position.setParams(new_top_left_x, new_top_left_y, new_top_right_x, new_bottom_left_y);
+        }
 
         image_proc=image.getSubimage(new_top_left_x, new_top_left_y, image_position.getWidth(), image_position.getHeight());
     }
@@ -156,8 +223,8 @@ public class JImage {
         image_position=new_position;
     }
 
-    public void cropZoomCurrentImage(Point p, int zoomType, int scaleWidth, int scaleHeight, int scaleMethod) throws Exception {
-        cropCurrentImage(p, zoomType);
+    public void cropZoomCurrentImage(Point p, int zoomType, int scaleWidth, int scaleHeight, int scaleMethod, boolean maintainAR) throws Exception {
+        cropCurrentImage(p, zoomType, maintainAR);
         setCurrentScaled(scaleWidth, scaleHeight, scaleMethod);
     }
 

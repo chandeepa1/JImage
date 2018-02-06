@@ -2,6 +2,7 @@ package org.JImage;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -10,10 +11,33 @@ public class JImageIntelligence {
     public static final int IMAGE_TYPE_RGB=0;
     public static final int IMAGE_TYPE_GRAY=1;
 
+    /**
+     * This property refers to the ratio between edges and background of the image.
+     * It will automatically be calculated looping through the image
+     */
+    public static final String IMAGE_PROPERTY_EDGE_RATIO="edge_ratio";
+
     private final JImage image;
 
     public JImageIntelligence(JImage image) {
         this.image = image;
+    }
+
+    /**
+     * Initializer methods
+     */
+
+    public void detectImageProperties() {
+        //IMAGE_PROPERTY_EDGE_RATIO
+        BufferedImage image_original=image.getOriginalImage();
+        int raster[][]=new int[image_original.getWidth()][image_original.getHeight()];
+        for (int x=0;x<raster.length;x++) {
+            for (int y=0;y<raster[x].length;y++) {
+                raster[x][y]=image_original.getRGB(x, y);
+            }
+        }
+
+        // TODO: Continue this
     }
 
     /**
