@@ -2,8 +2,10 @@ package org.JImage;
 
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -72,16 +74,66 @@ public class JImageObjectPicker {
                     g2d.draw(new Ellipse2D.Double(current_image_start_x, current_image_start_y, current_scaled_width, current_scaled_height));
                 }
             }
+            else if (object.object_type == JImageObject.JIMAGE_OBJECT_SQUARE) {
+                if (object.point.x >= image_curr_position.TOP_LEFT_X && object.point.x <= image_curr_position.TOP_RIGHT_X && object.point.y >= image_curr_position.TOP_LEFT_Y && object.point.y <= image_curr_position.BOTTOM_LEFT_Y) {
+                    double unscaled_center_x = object.point.x - image_curr_position.TOP_LEFT_X;
+                    double unscaled_center_y = object.point.y - image_curr_position.TOP_LEFT_Y;
+
+                    double current_image_center_x = image_maths.mapVal(unscaled_center_x, 0.0, image_curr_position.getWidth(), 0.0, image.getCurrentImageWidth());
+                    double current_image_center_y = image_maths.mapVal(unscaled_center_y, 0.0, image_curr_position.getHeight(), 0.0, image.getCurrentImageHeight());
+
+                    /**
+                     * This scaling does mean scaling just in tho given range of values. It is just a mapping, if the radius has been 'r' in the original image, how much will it be when it is zoomed
+                     * to the current range.
+                     */
+                    double object_radius_length_for_xy = object.object_dimensions.width / 2.0;
+                    double scaled_object_length_for_xy = image_maths.mapValInverse(object_radius_length_for_xy, 0, image.getOriginalImageWidth(), 0, image_curr_position.getWidth());
+
+                    double current_image_start_x = current_image_center_x - scaled_object_length_for_xy;
+                    double current_image_start_y = current_image_center_y - scaled_object_length_for_xy;
+
+                    double zoomed_scaled_length = object.object_dimensions.width;
+                    double current_scaled_length = image_maths.mapValInverse(zoomed_scaled_length, 0.0, (double) image.getOriginalImageWidth(), 0.0, (double) image_curr_position.getWidth());
+
+                    if (object.object_selected) {
+                        g2d.setColor(object_select_color);
+                    }
+                    else {
+                        g2d.setColor(object.object_color);
+                    }
+                    g2d.draw(new Rectangle2D.Double(current_image_start_x, current_image_start_y, current_scaled_length, current_scaled_length));
+                }
+            }
             else if (object.object_type == JImageObject.JIMAGE_OBJECT_DETECT) {
                 Map<String, Object> obj_props = object.getObjectProperties();
                 JImageIntelligence image_intelli = (JImageIntelligence) obj_props.get("intelli_object");
 
                 if (object.point.x >= image_curr_position.TOP_LEFT_X && object.point.x <= image_curr_position.TOP_RIGHT_X && object.point.y >= image_curr_position.TOP_LEFT_Y && object.point.y <= image_curr_position.BOTTOM_LEFT_Y) {
+                    // Detecting on the Original Image
+                    /*int raster_edges_on_original[][]=image_intelli.getEdgesFromSeed(image.getOriginalImage(), object.point, Double.parseDouble(obj_props.get("edge_object_color_ratio").toString()));
+                    List<JImagePoint> edges = new ArrayList<>();
+                    for (int x = 0; x < raster_edges_on_original.length; x++) {
+                        for (int y = 0; y < raster_edges_on_original[x].length; y++) {
+                            if (raster_edges_on_original[x][y] == 1) {
+                                if (x >= image_curr_position.TOP_LEFT_X && x <= image_curr_position.TOP_RIGHT_X && y >= image_curr_position.TOP_LEFT_Y && y <= image_curr_position.BOTTOM_LEFT_Y) {
+                                    double unscaled_x=x-image_curr_position.TOP_LEFT_X;
+                                    double unscaled_y=y-image_curr_position.TOP_LEFT_Y;
+
+                                    int scaled_x = (int) Math.round(image_maths.mapVal(unscaled_x, 0, image_curr_position.getWidth(), 0, image.getCurrentImageWidth()));
+                                    int scaled_y = (int) Math.round(image_maths.mapVal(unscaled_y, 0, image_curr_position.getHeight(), 0, image.getCurrentImageHeight()));
+
+                                    edges.add(new JImagePoint(scaled_x, scaled_y));
+                                }
+                            }
+                        }
+                    }*/
+
+                    // Detecting on the current image
                     double unscaled_x = object.point.x - image_curr_position.TOP_LEFT_X;
                     double unscaled_y = object.point.y - image_curr_position.TOP_LEFT_Y;
 
-                    int scaled_x = (int) Math.round(image_maths.mapVal(unscaled_x, 0, image_curr_position.getWidth(), 0, image.getCurrentImageWidth()));
-                    int scaled_y = (int) Math.round(image_maths.mapVal(unscaled_y, 0, image_curr_position.getHeight(), 0, image.getCurrentImageHeight()));
+                    int scaled_x = (int) Math.round(image_maths.mapVal(unscaled_x, 0.0, image_curr_position.getWidth(), 0.0, image.getCurrentImageWidth()));
+                    int scaled_y = (int) Math.round(image_maths.mapVal(unscaled_y, 0.0, image_curr_position.getHeight(), 0.0, image.getCurrentImageHeight()));
 
                     int raster_edges[][] = image_intelli.getEdgesFromSeed(image.getCurrentImage(), new JImagePoint(scaled_x, scaled_y), Double.parseDouble(obj_props.get("edge_object_color_ratio").toString()));
                     List<JImagePoint> edges = new ArrayList<>();
@@ -100,6 +152,10 @@ public class JImageObjectPicker {
                     }
 
                     for (JImagePoint edge : edges) {
+                        /*int int_edge_x = (int) Math.round(edge.x);
+                        int int_edge_y = (int) Math.round(edge.y);
+                        g2d.drawLine(int_edge_x, int_edge_y, int_edge_x, int_edge_y);*/
+
                         JImagePoint edge_on_original = image_maths.getJImagePointOnOriginal(edge);
                         if (edge_on_original.x >= image_curr_position.TOP_LEFT_X && edge_on_original.x <= image_curr_position.TOP_RIGHT_X && edge_on_original.y >= image_curr_position.TOP_LEFT_Y && edge_on_original.y <= image_curr_position.BOTTOM_LEFT_Y) {
                             int int_edge_x = (int) Math.round(edge.x);
@@ -172,6 +228,16 @@ public class JImageObjectPicker {
         objects.add(object_new);
     }
 
+    private void selectSquareObject(JImagePoint p, int length, Color obj_color) {
+        JImagePoint p_on_original=image_maths.getJImagePointOnOriginal(p);
+
+        double obj_length=image_maths.mapVal((double)length, 0.0, (double)image.getCurrentImageWidth(), 0.0, (double)image.getOriginalImageWidth());
+        JImageDimension obj_dimensions=new JImageDimension(obj_length, obj_length);
+
+        JImageObject object_new=new JImageObject(p_on_original, JImageObject.JIMAGE_OBJECT_SQUARE, obj_dimensions, obj_color);
+        objects.add(object_new);
+    }
+
     private void selectArbitraryObject(JImageIntelligence image_intelli, JImagePoint seed_point, double edge_object_color_ratio, Color obj_color) {
         JImagePoint seed_point_on_original=image_maths.getJImagePointOnOriginal(seed_point);
 
@@ -202,6 +268,18 @@ public class JImageObjectPicker {
      */
     public void drawSinglePoint(JImagePoint p, int radius, Color obj_color) {
         selectSinglePoint(p, radius, obj_color);
+    }
+
+    /**
+     * This method draws a square shape around the given point using the Graphics object provided.
+     * This method needs the user to call repaint() on the container of the image
+     * @param p The point at which the object is selected on your component of the image(according to its dimensions)
+     * @param length The length of the square on your component of the image(according to its dimensions)
+     * @param obj_color The color of the square that should be drawn
+     */
+
+    public void drawSquareObject(JImagePoint p, int length, Color obj_color) {
+        selectSquareObject(p, length, obj_color);
     }
 
     /**

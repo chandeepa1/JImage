@@ -16,7 +16,18 @@ public class JImageObject {
      *Numbers between 0 and 1000 are left off to declare other desired types
      */
     public static final int JIMAGE_OBJECT_ELLIPSE=0;
+    public static final int JIMAGE_OBJECT_SQUARE=1;
     public static final int JIMAGE_OBJECT_DETECT=1000;
+
+    /**
+     * Following constants describe the class of the selected object.
+     * This is the description of the real world object contained inside the selected object.
+     * This is not valid for JIMAGE_OBJECT_DETECT
+     */
+    public static final int JIMAGE_OBJECT_CLASS_NONE=-1;
+    public static final int JIMAGE_OBJECT_CLASS_ELLIPSE=0;
+    public static final int JIMAGE_OBJECT_CLASS_SQUARE=1;
+    public static final int JIMAGE_OBJECT_CLASS_TRIANGLE=2;
 
     /**
      * Following point is the center of the object. This contains its (x,y) coordinates.
@@ -56,8 +67,19 @@ public class JImageObject {
                 props.put("radius_vertical", String.valueOf(object_dimensions.height/2));
                 props.putAll(object_custom_props);
 
-                double enclosed_area=Math.PI*(object_dimensions.width/2)*(object_dimensions.height/2);
-                props.put("enclosed_area", String.valueOf(enclosed_area));
+                double ellipse_enclosed_area=Math.PI*(object_dimensions.width/2)*(object_dimensions.height/2);
+                props.put("enclosed_area", String.valueOf(ellipse_enclosed_area));
+
+                break;
+            case JIMAGE_OBJECT_SQUARE:
+                props.put("type", "square");
+                props.put("real_center_x", String.valueOf(point.x));
+                props.put("real_center_y", String.valueOf(point.y));
+                props.put("length", String.valueOf(object_dimensions.width));
+                props.putAll(object_custom_props);
+
+                double square_enclosed_area=object_dimensions.width*object_dimensions.height;
+                props.put("enclosed_area", String.valueOf(square_enclosed_area));
 
                 break;
             //Other object types goes here
@@ -69,6 +91,7 @@ public class JImageObject {
                 //TODO: Add dimensions, area and other related properties for a detected object here
 
                 props.putAll(object_custom_props);
+
                 break;
         }
         return props;
@@ -79,14 +102,21 @@ public class JImageObject {
      * @return double value of the x coordinate of the JImagePoint
      */
     public double getXMin() {
-        if (object_type==JIMAGE_OBJECT_ELLIPSE) {
-            double x_min=point.x-(object_dimensions.width/2.0);
-            return x_min;
+        double x_min;
+        switch (object_type) {
+            case JIMAGE_OBJECT_ELLIPSE:
+                x_min=point.x-(object_dimensions.width/2.0);
+
+                break;
+            case JIMAGE_OBJECT_SQUARE:
+                x_min=point.x-(object_dimensions.width/2.0);
+
+                break;
+            default:
+                x_min = 0.0;
         }
-        else {
-            //Remove this line after completing all of the code for all types of objects.
-            return 0.0;
-        }
+
+        return x_min;
     }
 
     /**
@@ -94,14 +124,21 @@ public class JImageObject {
      * @return double value of the x coordinate of the JImagePoint
      */
     public double getXMax() {
-        if (object_type==JIMAGE_OBJECT_ELLIPSE) {
-            double x_max=point.x+(object_dimensions.width/2.0);
-            return x_max;
+        double x_max;
+        switch (object_type) {
+            case JIMAGE_OBJECT_ELLIPSE:
+                x_max=point.x+(object_dimensions.width/2.0);
+
+                break;
+            case JIMAGE_OBJECT_SQUARE:
+                x_max=point.x+(object_dimensions.width/2.0);
+
+                break;
+            default:
+                x_max = 0.0;
         }
-        else {
-            //Remove this line after completing all of the code for all types of objects.
-            return 0.0;
-        }
+
+        return x_max;
     }
 
     /**
@@ -109,14 +146,21 @@ public class JImageObject {
      * @return double value of the y coordinate of the JImagePoint
      */
     public double getYMin() {
-        if (object_type==JIMAGE_OBJECT_ELLIPSE) {
-            double y_min=point.y-(object_dimensions.height/2.0);
-            return y_min;
+        double y_min;
+        switch (object_type) {
+            case JIMAGE_OBJECT_ELLIPSE:
+                y_min=point.y-(object_dimensions.height/2.0);
+
+                break;
+            case JIMAGE_OBJECT_SQUARE:
+                y_min=point.y-(object_dimensions.height/2.0);
+
+                break;
+            default:
+                y_min = 0.0;
         }
-        else {
-            //Remove this line after completing all of the code for all types of objects.
-            return 0.0;
-        }
+
+        return y_min;
     }
 
     /**
@@ -124,14 +168,21 @@ public class JImageObject {
      * @return double value of the y coordinate of the JImagePoint
      */
     public double getYMax() {
-        if (object_type==JIMAGE_OBJECT_ELLIPSE) {
-            double y_max=point.y+(object_dimensions.height/2.0);
-            return y_max;
+        double y_max;
+        switch (object_type) {
+            case JIMAGE_OBJECT_ELLIPSE:
+                y_max=point.y+(object_dimensions.height/2.0);
+
+                break;
+            case JIMAGE_OBJECT_SQUARE:
+                y_max=point.y+(object_dimensions.height/2.0);
+
+                break;
+            default:
+                y_max = 0.0;
         }
-        else {
-            //Remove this line after completing all of the code for all types of objects.
-            return 0.0;
-        }
+
+        return y_max;
     }
 
     /**
@@ -160,6 +211,10 @@ public class JImageObject {
                     break;
                 case "radius_vertical":
                     object_dimensions.height=Double.parseDouble(value.toString())*2.0;
+                    break;
+                case "length":
+                    object_dimensions.width=Double.parseDouble(value.toString());
+                    object_dimensions.height=Double.parseDouble(value.toString());
                     break;
                 // Everything else is set as a custom property
                 default:
