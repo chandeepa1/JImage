@@ -1,4 +1,4 @@
-package org.JImage;
+package com.axiohelix.oist.JImage;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;

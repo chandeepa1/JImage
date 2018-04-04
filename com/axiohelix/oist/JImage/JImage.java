@@ -1,27 +1,46 @@
-package org.JImage;
+package com.axiohelix.oist.JImage;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.nio.Buffer;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.List;
 
 public class JImage {
+
+    public static final int MODE_IMAGE_SIZED_CONTAINER=0;
+    public static final int MODE_CONTAINER_SIZED_IMAGE=1;
 
     public static final int ZOOM_TYPE_ZOOM_IN=1;
     public static final int ZOOM_TYPE_ZOOM_OUT=-1;
 
     private final BufferedImage image;
+    private final int image_mode;
     private BufferedImage image_proc;
     private JImagePosition image_position;
     private final JImageMaths image_maths;
     private final JImageSettings image_settings;
+    private final JImageFilters image_filters;
 
-    public JImage(BufferedImage image) {
+    public JImage(BufferedImage image, int image_mode) {
         this.image = image;
+        this.image_mode = image_mode;
 
         image_proc = image;
         image_position=new JImagePosition(0, 0, image.getWidth(), image.getHeight());
 
         image_maths=new JImageMaths(this);
         image_settings=new JImageSettings(this);
+        image_filters = new JImageFilters(this);
+    }
+
+    /**
+     * Getter methods
+     */
+
+    public int getImageMode() {
+        return image_mode;
     }
 
     /*
@@ -60,14 +79,59 @@ public class JImage {
     }
 
     public void setCurrentScaled(int width, int height, int SCALE_METHOD) {
-        Image obj_scaled=image.getSubimage(image_position.TOP_LEFT_X, image_position.TOP_LEFT_Y, image_position.getWidth(), image_position.getHeight()).getScaledInstance(width, height, SCALE_METHOD);
+        Image obj_scaled;
 
-        BufferedImage image_scaled=new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        if (image_mode==MODE_CONTAINER_SIZED_IMAGE) {
+            obj_scaled=image.getSubimage(image_position.TOP_LEFT_X, image_position.TOP_LEFT_Y, image_position.getWidth(), image_position.getHeight()).getScaledInstance(width, height, SCALE_METHOD);
+        }
+        else if (image_mode==MODE_IMAGE_SIZED_CONTAINER) {
+            obj_scaled=image.getScaledInstance(width, height, SCALE_METHOD);
+        }
+        else {
+            obj_scaled=null;
+        }
+
+        BufferedImage image_scaled=new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         Graphics2D graphics_scaled=image_scaled.createGraphics();
         graphics_scaled.drawImage(obj_scaled,0,0,null);
         graphics_scaled.dispose();
 
         image_proc=image_scaled;
+    }
+
+    public BufferedImage getOriginalScaled(int width, int height, int SCALE_METHOD) {
+        Image obj_scaled=image.getScaledInstance(width, height, SCALE_METHOD);
+
+        BufferedImage image_scaled=new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        Graphics2D graphics_scaled=image_scaled.createGraphics();
+        graphics_scaled.drawImage(obj_scaled,0,0,null);
+        graphics_scaled.dispose();
+
+        return image_scaled;
+    }
+
+    public void applyFilters() {
+        Map<JImageFilters.FilterType, List<Object>> appliedFilters = image_filters.getAppliedFilters();
+        Object[] appliedFilterTypes = appliedFilters.keySet().toArray();
+
+        BufferedImage processingImage = null;
+        if (image_mode == MODE_IMAGE_SIZED_CONTAINER) {
+            processingImage = getOriginalScaled(getCurrentImageWidth(), getCurrentImageHeight(), BufferedImage.SCALE_REPLICATE);
+        }
+        else if (image_mode == MODE_CONTAINER_SIZED_IMAGE) {
+            int procWidth = image_position.TOP_RIGHT_X - image_position.TOP_LEFT_X;
+            int procHeight = image_position.BOTTOM_LEFT_Y - image_position.TOP_LEFT_Y;
+            processingImage = image.getSubimage(image_position.TOP_LEFT_X, image_position.TOP_LEFT_Y, procWidth, procHeight);
+        }
+
+        for (Object objAppliedFilterType : appliedFilterTypes) {
+            JImageFilters.FilterType appliedFilterType = (JImageFilters.FilterType) objAppliedFilterType;
+            List<Object> methodArgs = appliedFilters.get(appliedFilterType);
+
+            processingImage = image_filters.applyFilter(processingImage, appliedFilterType, methodArgs);
+        }
+
+        image_proc = processingImage;
     }
 
     public void cropCurrentImage(Point p_on_curr, int zoomType, boolean maintainAR) throws Exception {
@@ -180,6 +244,8 @@ public class JImage {
         }
 
         image_proc=image.getSubimage(new_top_left_x, new_top_left_y, image_position.getWidth(), image_position.getHeight());
+
+        applyFilters();
     }
 
     public void panCurrentImage(Point drag_amount_on_curr) {
@@ -217,15 +283,53 @@ public class JImage {
         image_position.setParams(new_top_left_x, new_top_left_y, new_top_right_x, new_bottom_left_y);
 
         image_proc=image.getSubimage(new_top_left_x, new_top_left_y, image_position.getWidth(), image_position.getHeight());
+
+        applyFilters();
     }
 
     public void setPositionOnOriginal(JImagePosition new_position) {
         image_position=new_position;
     }
 
-    public void cropZoomCurrentImage(Point p, int zoomType, int scaleWidth, int scaleHeight, int scaleMethod, boolean maintainAR) throws Exception {
-        cropCurrentImage(p, zoomType, maintainAR);
-        setCurrentScaled(scaleWidth, scaleHeight, scaleMethod);
+    public void cropZoomCurrentImage(Point p, int zoomType, int scaleWidth, int scaleHeight, int scaleMethod, int zoomExtent, boolean maintainAR) throws Exception {
+        if (image_mode == MODE_CONTAINER_SIZED_IMAGE) {
+            cropCurrentImage(p, zoomType, maintainAR);
+            setCurrentScaled(scaleWidth, scaleHeight, scaleMethod);
+        }
+        else if (image_mode == MODE_IMAGE_SIZED_CONTAINER) {
+            int extX = image_maths.getCropXReducer(zoomExtent) * image_settings.ZOOM_SENSITIVITY;
+            int extY = image_maths.getCropYReducer(zoomExtent) * image_settings.ZOOM_SENSITIVITY;
+
+            int new_width, new_height;
+
+            if (zoomType == ZOOM_TYPE_ZOOM_IN) {
+                new_width = this.getCurrentImageWidth() + extX;
+                new_height = this.getCurrentImageHeight() + extY;
+            }
+            else if (zoomType == ZOOM_TYPE_ZOOM_OUT) {
+                new_width = this.getCurrentImageWidth() - extX;
+                new_height = this.getCurrentImageHeight() - extY;
+            }
+            else {
+                new_width = scaleWidth;
+                new_height = scaleHeight;
+            }
+
+            if (new_width < getOriginalImageWidth()) {
+                new_width = getOriginalImageWidth();
+            }
+
+            if (new_height < getOriginalImageHeight()) {
+                new_height = getOriginalImageHeight();
+            }
+
+            setCurrentScaled(new_width, new_height, scaleMethod);
+        }
+        else {
+            // Do nothing
+        }
+
+        applyFilters();
     }
 
     public void panZoomCurrentImage(Point p,  int scaleWidth, int scaleHeight, int scaleMethod) {
@@ -238,8 +342,21 @@ public class JImage {
         setCurrentScaled(scaleWidth, scaleHeight, scaleMethod);
     }
 
+    public void changeContrast(float factor) {
+        float scaleFactor = factor;
+        float offset = 10.0f;
+
+        List<Object> constrastArgs = new ArrayList<>();
+        constrastArgs.add(scaleFactor);
+        constrastArgs.add(offset);
+
+        image_filters.setFilter(JImageFilters.FilterType.CONTRAST, constrastArgs);
+
+        applyFilters();
+    }
+
     /*
-     * Setter methods for org.JImage.JImageSettings
+     * Setter methods for JImageSettings
      */
 
     public void setZoomSensitivity(int zoomSensitivity) {

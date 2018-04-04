@@ -1,15 +1,16 @@
-package org.JImage;
+package com.axiohelix.oist.JImage;
 
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Rectangle2D;
-import java.awt.image.BufferedImage;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class JImageObjectPicker {
+
+    public static final int SEARCH_MODE_AREA = 0;
+    public static final int SEARCH_MODE_POINT = 1;
 
     private final JImage image;
     private final Color object_select_color;
@@ -35,6 +36,9 @@ public class JImageObjectPicker {
          */
 
         Graphics2D g2d=(Graphics2D)g;
+        g2d.setStroke(new BasicStroke(2));
+
+        int imageMode = image.getImageMode();
 
         for (JImageObject object : objects) {
             JImagePosition image_curr_position = image.getCurrentPositionOnOriginal();
@@ -75,25 +79,47 @@ public class JImageObjectPicker {
                 }
             }
             else if (object.object_type == JImageObject.JIMAGE_OBJECT_SQUARE) {
-                if (object.point.x >= image_curr_position.TOP_LEFT_X && object.point.x <= image_curr_position.TOP_RIGHT_X && object.point.y >= image_curr_position.TOP_LEFT_Y && object.point.y <= image_curr_position.BOTTOM_LEFT_Y) {
-                    double unscaled_center_x = object.point.x - image_curr_position.TOP_LEFT_X;
-                    double unscaled_center_y = object.point.y - image_curr_position.TOP_LEFT_Y;
+                if (imageMode == JImage.MODE_CONTAINER_SIZED_IMAGE) {
+                    if (object.point.x >= image_curr_position.TOP_LEFT_X && object.point.x <= image_curr_position.TOP_RIGHT_X && object.point.y >= image_curr_position.TOP_LEFT_Y && object.point.y <= image_curr_position.BOTTOM_LEFT_Y) {
+                        double unscaled_center_x = object.point.x - image_curr_position.TOP_LEFT_X;
+                        double unscaled_center_y = object.point.y - image_curr_position.TOP_LEFT_Y;
 
-                    double current_image_center_x = image_maths.mapVal(unscaled_center_x, 0.0, image_curr_position.getWidth(), 0.0, image.getCurrentImageWidth());
-                    double current_image_center_y = image_maths.mapVal(unscaled_center_y, 0.0, image_curr_position.getHeight(), 0.0, image.getCurrentImageHeight());
+                        double current_image_center_x = image_maths.mapVal(unscaled_center_x, 0.0, image_curr_position.getWidth(), 0.0, image.getCurrentImageWidth());
+                        double current_image_center_y = image_maths.mapVal(unscaled_center_y, 0.0, image_curr_position.getHeight(), 0.0, image.getCurrentImageHeight());
 
-                    /**
-                     * This scaling does mean scaling just in tho given range of values. It is just a mapping, if the radius has been 'r' in the original image, how much will it be when it is zoomed
-                     * to the current range.
-                     */
-                    double object_radius_length_for_xy = object.object_dimensions.width / 2.0;
-                    double scaled_object_length_for_xy = image_maths.mapValInverse(object_radius_length_for_xy, 0, image.getOriginalImageWidth(), 0, image_curr_position.getWidth());
+                        /**
+                         * This scaling does mean scaling just in tho given range of values. It is just a mapping, if the radius has been 'r' in the original image, how much will it be when it is zoomed
+                         * to the current range.
+                         */
+                        double object_radius_length_for_xy = object.object_dimensions.width / 2.0;
+                        double scaled_object_length_for_xy = image_maths.mapValInverse(object_radius_length_for_xy, 0, image.getOriginalImageWidth(), 0, image_curr_position.getWidth());
 
-                    double current_image_start_x = current_image_center_x - scaled_object_length_for_xy;
-                    double current_image_start_y = current_image_center_y - scaled_object_length_for_xy;
+                        double current_image_start_x = current_image_center_x - scaled_object_length_for_xy;
+                        double current_image_start_y = current_image_center_y - scaled_object_length_for_xy;
 
-                    double zoomed_scaled_length = object.object_dimensions.width;
-                    double current_scaled_length = image_maths.mapValInverse(zoomed_scaled_length, 0.0, (double) image.getOriginalImageWidth(), 0.0, (double) image_curr_position.getWidth());
+                        double zoomed_scaled_length = object.object_dimensions.width;
+                        double current_scaled_length = image_maths.mapValInverse(zoomed_scaled_length, 0.0, (double) image.getOriginalImageWidth(), 0.0, (double) image_curr_position.getWidth());
+
+                        if (object.object_selected) {
+                            g2d.setColor(object_select_color);
+                        }
+                        else {
+                            g2d.setColor(object.object_color);
+                        }
+                        g2d.draw(new Rectangle2D.Double(current_image_start_x, current_image_start_y, current_scaled_length, current_scaled_length));
+                    }
+                }
+                else if (imageMode == JImage.MODE_IMAGE_SIZED_CONTAINER) {
+                    double unscaled_x = object.point.x;
+                    double unscaled_y = object.point.y;
+
+                    double unscaled_start_x = unscaled_x - (object.object_dimensions.width/2);
+                    double unscaled_start_y = unscaled_y - (object.object_dimensions.height/2);
+
+                    double scaled_start_x = image_maths.mapVal(unscaled_start_x, 0, image.getOriginalImageWidth(), 0, image.getCurrentImageWidth());
+                    double scaled_start_y = image_maths.mapVal(unscaled_start_y, 0, image.getOriginalImageHeight(), 0, image.getCurrentImageHeight());
+
+                    double scaled_length = image_maths.mapVal(object.object_dimensions.width, 0, image.getOriginalImageWidth(), 0, image.getCurrentImageWidth());
 
                     if (object.object_selected) {
                         g2d.setColor(object_select_color);
@@ -101,7 +127,7 @@ public class JImageObjectPicker {
                     else {
                         g2d.setColor(object.object_color);
                     }
-                    g2d.draw(new Rectangle2D.Double(current_image_start_x, current_image_start_y, current_scaled_length, current_scaled_length));
+                    g2d.draw(new Rectangle2D.Double(scaled_start_x, scaled_start_y, scaled_length, scaled_length));
                 }
             }
             else if (object.object_type == JImageObject.JIMAGE_OBJECT_DETECT) {
@@ -231,7 +257,19 @@ public class JImageObjectPicker {
     private void selectSquareObject(JImagePoint p, int length, Color obj_color) {
         JImagePoint p_on_original=image_maths.getJImagePointOnOriginal(p);
 
-        double obj_length=image_maths.mapVal((double)length, 0.0, (double)image.getCurrentImageWidth(), 0.0, (double)image.getOriginalImageWidth());
+        int imageMode = image.getImageMode();
+
+        double obj_length;
+        if (imageMode == JImage.MODE_CONTAINER_SIZED_IMAGE) {
+            obj_length = image_maths.mapVal((double)length, 0.0, (double)image.getCurrentImageWidth(), 0.0, (double)image.getOriginalImageWidth());
+        }
+        else if (imageMode == JImage.MODE_IMAGE_SIZED_CONTAINER) {
+            obj_length = length;
+        }
+        else {
+            obj_length = 0;
+        }
+
         JImageDimension obj_dimensions=new JImageDimension(obj_length, obj_length);
 
         JImageObject object_new=new JImageObject(p_on_original, JImageObject.JIMAGE_OBJECT_SQUARE, obj_dimensions, obj_color);
@@ -296,6 +334,14 @@ public class JImageObjectPicker {
     }
 
     /**
+     * This method is used to add an existing JImageObject to the current set of JImageObjects.
+     * @param object JImageObject which has been initialized by user.
+     */
+    public void addObject(JImageObject object) {
+        objects.add(object);
+    }
+
+    /**
      * Methods regarding the currently selected points
      */
 
@@ -327,9 +373,52 @@ public class JImageObjectPicker {
      * Selection Checkers
      */
 
-    /*public boolean isPointSelected(JImagePoint p, int SEARCH_MODE) {
+    public boolean isPointSelected(JImagePoint p, int SEARCH_MODE) {
+        JImageObject objectAtPoint = getObjectSorroundingPoint(p, SEARCH_MODE);
 
-    }*/
+        return objectAtPoint != null;
+    }
+
+    public JImageObject getObjectSorroundingPoint(JImagePoint p, int SEARCH_MODE) {
+        JImagePoint pOnOriginal = image_maths.getJImagePointOnOriginal(p);
+
+        for (JImageObject object : objects) {
+            switch (object.object_type) {
+                case JImageObject.JIMAGE_OBJECT_ELLIPSE:
+
+                    break;
+                case JImageObject.JIMAGE_OBJECT_SQUARE:
+                    if (SEARCH_MODE == SEARCH_MODE_POINT) {
+                        int objectX = (int)Math.round(object.point.x);
+                        int objectY = (int)Math.round(object.point.y);
+
+                        int pOnOriginalX = (int)Math.round(pOnOriginal.x);
+                        int pOnOriginalY = (int)Math.round(pOnOriginal.y);
+
+                        if (objectX == pOnOriginalX && objectY == pOnOriginalY) {
+                            return object;
+                        }
+                    }
+                    else if (SEARCH_MODE == SEARCH_MODE_AREA) {
+                        double topLeftX = object.getXMin();
+                        double topRightX = object.getXMax();
+                        double topLeftY = object.getYMin();
+                        double bottomLeftY = object.getYMax();
+
+                        if (pOnOriginal.x >= topLeftX && pOnOriginal.x <= topRightX && pOnOriginal.y >= topLeftY && pOnOriginal.y <= bottomLeftY) {
+                            return object;
+                        }
+                    }
+
+                    break;
+                case JImageObject.JIMAGE_OBJECT_DETECT:
+
+                    break;
+            }
+        }
+
+        return null;
+    }
 
     /**
      * Getter methods

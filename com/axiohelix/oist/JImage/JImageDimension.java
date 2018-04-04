@@ -1,4 +1,4 @@
-package org.JImage;
+package com.axiohelix.oist.JImage;
 
 public class JImageDimension {
 
