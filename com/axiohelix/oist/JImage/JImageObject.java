@@ -17,6 +17,7 @@ public class JImageObject {
      */
     public static final int JIMAGE_OBJECT_ELLIPSE = 0;
     public static final int JIMAGE_OBJECT_SQUARE = 1;
+    public static final int JIMAGE_OBJECT_RECTANGLE = 2;
     public static final int JIMAGE_OBJECT_DETECT = 1000;
 
     /**
@@ -32,6 +33,9 @@ public class JImageObject {
     public static final String PROPERTY_ELLIPSE_RADIUS_Y = "radius_vertical";
 
     public static final String PROPERTY_SQUARE_LENGTH = "length";
+
+    public static final String PROPERTY_RECTANGLE_WIDTH = "width";
+    public static final String PROPERTY_RECTANGLE_HEIGHT = "height";
 
     // This is a special case where ALL_X and ALL_Y properties are overriden by SEED_X and SEED_Y
     public static final String PROPERTY_AUTO_DETECT_SEED_X = "real_seed_point_x";
@@ -76,7 +80,6 @@ public class JImageObject {
                 props.put(PROPERTY_ALL_Y, String.valueOf(point.y));
                 props.put(PROPERTY_ELLIPSE_RADIUS_X, String.valueOf(object_dimensions.width / 2));
                 props.put(PROPERTY_ELLIPSE_RADIUS_Y, String.valueOf(object_dimensions.height / 2));
-                props.putAll(object_custom_props);
 
                 double ellipse_enclosed_area = Math.PI * (object_dimensions.width / 2) * (object_dimensions.height / 2);
                 props.put(PROPERTY_ALL_ENCLOSED_AREA, String.valueOf(ellipse_enclosed_area));
@@ -87,10 +90,20 @@ public class JImageObject {
                 props.put(PROPERTY_ALL_X, String.valueOf(point.x));
                 props.put(PROPERTY_ALL_Y, String.valueOf(point.y));
                 props.put(PROPERTY_SQUARE_LENGTH, String.valueOf(object_dimensions.width));
-                props.putAll(object_custom_props);
 
                 double square_enclosed_area = object_dimensions.width * object_dimensions.height;
                 props.put(PROPERTY_ALL_ENCLOSED_AREA, String.valueOf(square_enclosed_area));
+
+                break;
+            case JIMAGE_OBJECT_RECTANGLE:
+                props.put(PROPERTY_ALL_TYPE, "rectangle");
+                props.put(PROPERTY_ALL_X, String.valueOf(point.x));
+                props.put(PROPERTY_ALL_Y, String.valueOf(point.y));
+                props.put(PROPERTY_RECTANGLE_WIDTH, String.valueOf(object_dimensions.width));
+                props.put(PROPERTY_RECTANGLE_HEIGHT, String.valueOf(object_dimensions.height));
+
+                double rectangleEnclosedArea = object_dimensions.width * object_dimensions.height;
+                props.put(PROPERTY_ALL_ENCLOSED_AREA, String.valueOf(rectangleEnclosedArea));
 
                 break;
             //Other object types goes here
@@ -101,10 +114,10 @@ public class JImageObject {
 
                 //TODO: Add dimensions, area and other related properties for a detected object here
 
-                props.putAll(object_custom_props);
-
                 break;
         }
+        props.putAll(object_custom_props);
+
         return props;
     }
 
@@ -121,6 +134,10 @@ public class JImageObject {
 
                 break;
             case JIMAGE_OBJECT_SQUARE:
+                x_min = point.x - (object_dimensions.width / 2.0);
+
+                break;
+            case JIMAGE_OBJECT_RECTANGLE:
                 x_min = point.x - (object_dimensions.width / 2.0);
 
                 break;
@@ -147,6 +164,10 @@ public class JImageObject {
                 x_max = point.x + (object_dimensions.width / 2.0);
 
                 break;
+            case JIMAGE_OBJECT_RECTANGLE:
+                x_max = point.x + (object_dimensions.width / 2.0);
+
+                break;
             default:
                 x_max = 0.0;
         }
@@ -170,6 +191,10 @@ public class JImageObject {
                 y_min = point.y - (object_dimensions.height / 2.0);
 
                 break;
+            case JIMAGE_OBJECT_RECTANGLE:
+                y_min = point.y - (object_dimensions.height / 2.0);
+
+                break;
             default:
                 y_min = 0.0;
         }
@@ -190,6 +215,10 @@ public class JImageObject {
 
                 break;
             case JIMAGE_OBJECT_SQUARE:
+                y_max = point.y + (object_dimensions.height / 2.0);
+
+                break;
+            case JIMAGE_OBJECT_RECTANGLE:
                 y_max = point.y + (object_dimensions.height / 2.0);
 
                 break;
@@ -228,6 +257,12 @@ public class JImageObject {
                     break;
                 case PROPERTY_SQUARE_LENGTH:
                     object_dimensions.width = Double.parseDouble(value.toString());
+                    object_dimensions.height = Double.parseDouble(value.toString());
+                    break;
+                case PROPERTY_RECTANGLE_WIDTH:
+                    object_dimensions.width = Double.parseDouble(value.toString());
+                    break;
+                case PROPERTY_RECTANGLE_HEIGHT:
                     object_dimensions.height = Double.parseDouble(value.toString());
                     break;
                 // Everything else is set as a custom property
