@@ -341,7 +341,7 @@ public class JImageObjectPicker {
 
         JImageDimension objectDimensions = new JImageDimension(objectWidth, objectHeight);
 
-        JImageObject objectNew = new JImageObject(pointOnOriginal, JImageObject.JIMAGE_OBJECT_SQUARE, objectDimensions, objectColor);
+        JImageObject objectNew = new JImageObject(pointOnOriginal, JImageObject.JIMAGE_OBJECT_RECTANGLE, objectDimensions, objectColor);
         objects.add(objectNew);
     }
 
@@ -476,6 +476,7 @@ public class JImageObjectPicker {
 
                     break;
                 case JImageObject.JIMAGE_OBJECT_SQUARE:
+                case JImageObject.JIMAGE_OBJECT_RECTANGLE:
                     if (SEARCH_MODE == SEARCH_MODE_POINT) {
                         int objectX = (int) Math.round(object.point.x);
                         int objectY = (int) Math.round(object.point.y);
