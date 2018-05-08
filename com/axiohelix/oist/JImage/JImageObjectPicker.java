@@ -3,6 +3,7 @@ package com.axiohelix.oist.JImage;
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -12,9 +13,16 @@ public class JImageObjectPicker {
     public static final int SEARCH_MODE_AREA = 0;
     public static final int SEARCH_MODE_POINT = 1;
 
-    private final JImage image;
+    public static final List<String> JIMAGEOBJECT_HIDDEN_PROPERTIES = new ArrayList<String>() {{
+        add(JImageObject.CUSTOM_HIDDEN_PROPERTY_AUTO_DETECT_EDGES_ON_ORIGINAL);
+        add(JImageObject.CUSTOM_HIDDEN_PROPERTY_AUTO_DETECT_EDGES_LAST_REPAINT);
+        add(JImageObject.CUSTOM_HIDDEN_PROPERTY_AUTO_DETECT_INTELLI_OBJ);
+        add(JImageObject.CUSTOM_HIDDEN_PROPERTY_IMAGE_DIMENSIONS);
+    }};
+
+    private JImage image;
     private final Color object_select_color;
-    private final JImageMaths image_maths;
+    private JImageMaths image_maths;
 
     private List<JImageObject> objects;
 
@@ -44,37 +52,60 @@ public class JImageObjectPicker {
             JImagePosition image_curr_position = image.getCurrentPositionOnOriginal();
 
             if (object.object_type == JImageObject.JIMAGE_OBJECT_ELLIPSE) {
-                if (object.point.x >= image_curr_position.TOP_LEFT_X && object.point.x <= image_curr_position.TOP_RIGHT_X && object.point.y >= image_curr_position.TOP_LEFT_Y && object.point.y <= image_curr_position.BOTTOM_LEFT_Y) {
-                    double unscaled_center_x = object.point.x - image_curr_position.TOP_LEFT_X;
-                    double unscaled_center_y = object.point.y - image_curr_position.TOP_LEFT_Y;
+                if (imageMode == JImage.MODE_CONTAINER_SIZED_IMAGE) {
+                    if (object.point.x >= image_curr_position.TOP_LEFT_X && object.point.x <= image_curr_position.TOP_RIGHT_X && object.point.y >= image_curr_position.TOP_LEFT_Y && object.point.y <= image_curr_position.BOTTOM_LEFT_Y) {
+                        double unscaled_center_x = object.point.x - image_curr_position.TOP_LEFT_X;
+                        double unscaled_center_y = object.point.y - image_curr_position.TOP_LEFT_Y;
 
-                    double current_image_center_x = image_maths.mapVal(unscaled_center_x, 0.0, image_curr_position.getWidth(), 0.0, image.getCurrentImageWidth());
-                    double current_image_center_y = image_maths.mapVal(unscaled_center_y, 0.0, image_curr_position.getHeight(), 0.0, image.getCurrentImageHeight());
+                        double current_image_center_x = image_maths.mapVal(unscaled_center_x, 0.0, image_curr_position.getWidth(), 0.0, image.getCurrentImageWidth());
+                        double current_image_center_y = image_maths.mapVal(unscaled_center_y, 0.0, image_curr_position.getHeight(), 0.0, image.getCurrentImageHeight());
+
+                        /**
+                         * This scaling does mean scaling just in tho given range of values. It is just a mapping, if the radius has been 'r' in the original image, how much will it be when it is zoomed
+                         * to the current range.
+                         */
+                        double object_radius_for_xy = object.object_dimensions.width / 2.0;
+                        double scaled_object_radius_for_xy = image_maths.mapValInverse(object_radius_for_xy, 0, image.getOriginalImageWidth(), 0, image_curr_position.getWidth());
+
+                        double current_image_start_x = current_image_center_x - scaled_object_radius_for_xy;
+                        double current_image_start_y = current_image_center_y - scaled_object_radius_for_xy;
+
+                        double zoomed_scaled_radius = object.object_dimensions.width;
+                        double current_scaled_radius = image_maths.mapValInverse(zoomed_scaled_radius, 0.0, (double) image.getOriginalImageWidth(), 0.0, (double) image_curr_position.getWidth());
+
+                        if (object.object_selected) {
+                            g2d.setColor(object_select_color);
+                        } else {
+                            g2d.setColor(object.object_color);
+                        }
+                        g2d.draw(new Ellipse2D.Double(current_image_start_x, current_image_start_y, current_scaled_radius, current_scaled_radius));
+                    }
+                }
+                else if (imageMode == JImage.MODE_IMAGE_SIZED_CONTAINER) {
+                    double unscaled_center_x = object.point.x;
+                    double unscaled_center_y = object.point.y;
+
+                    double current_image_center_x = image_maths.mapVal(unscaled_center_x, 0.0, image.getOriginalImageWidth(), 0.0, image.getCurrentImageWidth());
+                    double current_image_center_y = image_maths.mapVal(unscaled_center_y, 0.0, image.getOriginalImageHeight(), 0.0, image.getCurrentImageHeight());
 
                     /**
                      * This scaling does mean scaling just in tho given range of values. It is just a mapping, if the radius has been 'r' in the original image, how much will it be when it is zoomed
                      * to the current range.
                      */
-                    double object_radius_width_for_xy = object.object_dimensions.width / 2.0;
-                    double object_radius_height_for_xy = object.object_dimensions.height / 2.0;
-                    double scaled_object_radius_width_for_xy = image_maths.mapValInverse(object_radius_width_for_xy, 0, image.getOriginalImageWidth(), 0, image_curr_position.getWidth());
-                    double scaled_object_radius_height_for_xy = image_maths.mapValInverse(object_radius_height_for_xy, 0, image.getOriginalImageHeight(), 0, image_curr_position.getHeight());
+                    double object_radius_for_xy = object.object_dimensions.width / 2.0;
+                    double scaled_object_radius_for_xy = image_maths.mapVal(object_radius_for_xy, 0, image.getOriginalImageWidth(), 0, image.getCurrentImageWidth());
 
-                    double current_image_start_x = current_image_center_x - scaled_object_radius_width_for_xy;
-                    double current_image_start_y = current_image_center_y - scaled_object_radius_height_for_xy;
+                    double current_image_start_x = current_image_center_x - scaled_object_radius_for_xy;
+                    double current_image_start_y = current_image_center_y - scaled_object_radius_for_xy;
 
-                    double zoomed_scaled_width = object.object_dimensions.width;
-                    double current_scaled_width = image_maths.mapValInverse(zoomed_scaled_width, 0.0, (double) image.getOriginalImageWidth(), 0.0, (double) image_curr_position.getWidth());
-
-                    double zoomed_scaled_height = object.object_dimensions.height;
-                    double current_scaled_height = image_maths.mapValInverse(zoomed_scaled_height, 0.0, (double) image.getOriginalImageHeight(), 0.0, (double) image_curr_position.getHeight());
+                    double current_scaled_diameter = image_maths.mapVal(object.object_dimensions.width, 0.0, (double) image.getOriginalImageWidth(), 0.0, (double) image.getCurrentImageWidth());
 
                     if (object.object_selected) {
                         g2d.setColor(object_select_color);
                     } else {
                         g2d.setColor(object.object_color);
                     }
-                    g2d.draw(new Ellipse2D.Double(current_image_start_x, current_image_start_y, current_scaled_width, current_scaled_height));
+                    g2d.draw(new Ellipse2D.Double(current_image_start_x, current_image_start_y, current_scaled_diameter, current_scaled_diameter));
                 }
             } else if (object.object_type == JImageObject.JIMAGE_OBJECT_SQUARE) {
                 if (imageMode == JImage.MODE_CONTAINER_SIZED_IMAGE) {
@@ -180,103 +211,76 @@ public class JImageObjectPicker {
                 }
             } else if (object.object_type == JImageObject.JIMAGE_OBJECT_DETECT) {
                 Map<String, Object> obj_props = object.getObjectProperties();
-                JImageIntelligence image_intelli = (JImageIntelligence) obj_props.get("intelli_object");
+                JImageIntelligence image_intelli = (JImageIntelligence) obj_props.get(JImageObject.CUSTOM_HIDDEN_PROPERTY_AUTO_DETECT_INTELLI_OBJ);
 
-                if (object.point.x >= image_curr_position.TOP_LEFT_X && object.point.x <= image_curr_position.TOP_RIGHT_X && object.point.y >= image_curr_position.TOP_LEFT_Y && object.point.y <= image_curr_position.BOTTOM_LEFT_Y) {
-                    // Detecting on the Original Image
-                    /*int raster_edges_on_original[][]=image_intelli.getEdgesFromSeed(image.getOriginalImage(), object.point, Double.parseDouble(obj_props.get("edge_object_color_ratio").toString()));
-                    List<JImagePoint> edges = new ArrayList<>();
-                    for (int x = 0; x < raster_edges_on_original.length; x++) {
-                        for (int y = 0; y < raster_edges_on_original[x].length; y++) {
-                            if (raster_edges_on_original[x][y] == 1) {
-                                if (x >= image_curr_position.TOP_LEFT_X && x <= image_curr_position.TOP_RIGHT_X && y >= image_curr_position.TOP_LEFT_Y && y <= image_curr_position.BOTTOM_LEFT_Y) {
-                                    double unscaled_x=x-image_curr_position.TOP_LEFT_X;
-                                    double unscaled_y=y-image_curr_position.TOP_LEFT_Y;
+                int realX = (int) object.point.x;
+                int realY = (int) object.point.y;
+                BufferedImage originalImageGray = image_intelli.getGrayScale(image.getOriginalImageWithFilters());
+                int originalSeedGray = originalImageGray.getRGB(realX, realY);
+                BufferedImage currentImageGray = image_intelli.getGrayScale(image.getCurrentImage());
 
-                                    int scaled_x = (int) Math.round(image_maths.mapVal(unscaled_x, 0, image_curr_position.getWidth(), 0, image.getCurrentImageWidth()));
-                                    int scaled_y = (int) Math.round(image_maths.mapVal(unscaled_y, 0, image_curr_position.getHeight(), 0, image.getCurrentImageHeight()));
+                List<JImagePoint> edges = new ArrayList<>();
 
-                                    edges.add(new JImagePoint(scaled_x, scaled_y));
+                if (imageMode == JImage.MODE_CONTAINER_SIZED_IMAGE) {
+                    if (object.point.x >= image_curr_position.TOP_LEFT_X && object.point.x <= image_curr_position.TOP_RIGHT_X && object.point.y >= image_curr_position.TOP_LEFT_Y && object.point.y <= image_curr_position.BOTTOM_LEFT_Y) {
+                        int unscaled_x = (int) (image_curr_position.TOP_LEFT_X - object.point.x);
+                        int unscaled_y = (int) (image_curr_position.TOP_LEFT_X - object.point.x);
+
+                        int scaled_x = (int) image_maths.mapVal(unscaled_x, 0.0, image_curr_position.getWidth(), 0.0, image.getCurrentImageWidth());
+                        int scaled_y = (int) image_maths.mapVal(unscaled_y, 0.0, image_curr_position.getHeight(), 0.0, image.getCurrentImageHeight());
+
+                        JImagePoint pointOnCurrent = new JImagePoint(scaled_x, scaled_y);
+                        JImagePoint pointSeedCorrected = image_intelli.getCorrectedSeedPoint(currentImageGray, pointOnCurrent, originalSeedGray);
+                        Double edgeObjectRatio = Double.parseDouble(obj_props.get(JImageObject.CUSTOM_PROPERTY_AUTO_DETECT_EDGE_OBJECT_RATIO).toString());
+
+                        byte raster_edges[][] = image_intelli.getEdgesFromSeed(image.getCurrentImage(), pointSeedCorrected, edgeObjectRatio);
+
+                        for (int x = 0; x < raster_edges.length; x++) {
+                            for (int y = 0; y < raster_edges[x].length; y++) {
+                                JImagePoint edgeOnCurrent = new JImagePoint(x, y);
+                                JImagePoint edgeOnOriginal = image_maths.getJImagePointOnOriginal(edgeOnCurrent);
+
+                                if (edgeOnOriginal.x >= image_curr_position.TOP_LEFT_X && edgeOnOriginal.x <= image_curr_position.TOP_RIGHT_X && edgeOnOriginal.y >= image_curr_position.TOP_LEFT_Y && edgeOnOriginal.y <= image_curr_position.BOTTOM_LEFT_Y) {
+                                    if (raster_edges[x][y] == (byte)1) {
+                                        edges.add(edgeOnCurrent);
+                                    }
                                 }
                             }
                         }
-                    }*/
+                    }
+                }
+                else if (imageMode == JImage.MODE_IMAGE_SIZED_CONTAINER) {
+                    int scaled_x = (int) image_maths.mapVal(object.point.x, 0.0, image.getOriginalImageWidth(), 0.0, image.getCurrentImageWidth());
+                    int scaled_y = (int) image_maths.mapVal(object.point.y, 0.0, image.getOriginalImageHeight(), 0.0, image.getCurrentImageHeight());
 
-                    // Detecting on the current image
-                    double unscaled_x = object.point.x - image_curr_position.TOP_LEFT_X;
-                    double unscaled_y = object.point.y - image_curr_position.TOP_LEFT_Y;
+                    JImagePoint pointOnCurrent = new JImagePoint(scaled_x, scaled_y);
+                    JImagePoint pointSeedCorrected = image_intelli.getCorrectedSeedPoint(currentImageGray, pointOnCurrent, originalSeedGray);
+                    Double edgeObjectRatio = Double.parseDouble(obj_props.get(JImageObject.CUSTOM_PROPERTY_AUTO_DETECT_EDGE_OBJECT_RATIO).toString());
 
-                    int scaled_x = (int) Math.round(image_maths.mapVal(unscaled_x, 0.0, image_curr_position.getWidth(), 0.0, image.getCurrentImageWidth()));
-                    int scaled_y = (int) Math.round(image_maths.mapVal(unscaled_y, 0.0, image_curr_position.getHeight(), 0.0, image.getCurrentImageHeight()));
+                    byte raster_edges[][] = image_intelli.getEdgesFromSeed(image.getCurrentImage(), pointSeedCorrected, edgeObjectRatio);
 
-                    int raster_edges[][] = image_intelli.getEdgesFromSeed(image.getCurrentImage(), new JImagePoint(scaled_x, scaled_y), Double.parseDouble(obj_props.get("edge_object_color_ratio").toString()));
-                    List<JImagePoint> edges = new ArrayList<>();
                     for (int x = 0; x < raster_edges.length; x++) {
                         for (int y = 0; y < raster_edges[x].length; y++) {
-                            if (raster_edges[x][y] == 1) {
+                            if (raster_edges[x][y] == (byte)1) {
                                 edges.add(new JImagePoint(x, y));
                             }
                         }
                     }
-
-                    if (object.object_selected) {
-                        g2d.setColor(object_select_color);
-                    } else {
-                        g2d.setColor(object.object_color);
-                    }
-
-                    for (JImagePoint edge : edges) {
-                        /*int int_edge_x = (int) Math.round(edge.x);
-                        int int_edge_y = (int) Math.round(edge.y);
-                        g2d.drawLine(int_edge_x, int_edge_y, int_edge_x, int_edge_y);*/
-
-                        JImagePoint edge_on_original = image_maths.getJImagePointOnOriginal(edge);
-                        if (edge_on_original.x >= image_curr_position.TOP_LEFT_X && edge_on_original.x <= image_curr_position.TOP_RIGHT_X && edge_on_original.y >= image_curr_position.TOP_LEFT_Y && edge_on_original.y <= image_curr_position.BOTTOM_LEFT_Y) {
-                            int int_edge_x = (int) Math.round(edge.x);
-                            int int_edge_y = (int) Math.round(edge.y);
-                            g2d.drawLine(int_edge_x, int_edge_y, int_edge_x, int_edge_y);
-                        }
-                    }
                 }
-                /*Thread thread_curr_obj= new Thread(() -> {
-                    Map<String, Object> obj_props=object.getObjectProperties();
-                    JImageIntelligence image_intelli=(JImageIntelligence)obj_props.get("intelli_object");
 
-                    if (object.point.x >= image_curr_position.TOP_LEFT_X && object.point.x <= image_curr_position.TOP_RIGHT_X && object.point.y >= image_curr_position.TOP_LEFT_Y && object.point.y <= image_curr_position.BOTTOM_LEFT_Y) {
-                        double unscaled_x=object.point.x-image_curr_position.TOP_LEFT_X;
-                        double unscaled_y=object.point.y-image_curr_position.TOP_LEFT_Y;
+                object.setProperty(JImageObject.CUSTOM_HIDDEN_PROPERTY_AUTO_DETECT_EDGES_LAST_REPAINT, edges);
 
-                        int scaled_x=(int)Math.round(image_maths.mapVal(unscaled_x, 0, image_curr_position.getWidth(), 0, image.getCurrentImageWidth()));
-                        int scaled_y=(int)Math.round(image_maths.mapVal(unscaled_y, 0, image_curr_position.getHeight(), 0, image.getCurrentImageHeight()));
+                if (object.object_selected) {
+                    g2d.setColor(object_select_color);
+                } else {
+                    g2d.setColor(object.object_color);
+                }
 
-                        int raster_edges[][]=image_intelli.getEdgesFromSeed(image.getCurrentImage(), new JImagePoint(scaled_x, scaled_y), Double.parseDouble(obj_props.get("edge_object_color_ratio").toString()));
-                        List<JImagePoint> edges=new ArrayList<>();
-                        for (int x = 0; x < raster_edges.length; x++) {
-                            for (int y = 0; y < raster_edges[x].length; y++) {
-                                if (raster_edges[x][y] == 1) {
-                                    edges.add(new JImagePoint(x, y));
-                                }
-                            }
-                        }
-
-                        if (object.object_selected) {
-                            g2d.setColor(object_select_color);
-                        }
-                        else {
-                            g2d.setColor(object.object_color);
-                        }
-
-                        for (JImagePoint edge : edges) {
-                            JImagePoint edge_on_original=image_maths.getJImagePointOnOriginal(edge);
-                            if (edge_on_original.x >= image_curr_position.TOP_LEFT_X && edge_on_original.x <= image_curr_position.TOP_RIGHT_X && edge_on_original.y >= image_curr_position.TOP_LEFT_Y && edge_on_original.y <= image_curr_position.BOTTOM_LEFT_Y) {
-                                int int_edge_x=(int)Math.round(edge.x);
-                                int int_edge_y=(int)Math.round(edge.y);
-                                g2d.drawLine(int_edge_x, int_edge_y, int_edge_x, int_edge_y);
-                            }
-                        }
-                    }
-                });
-                thread_curr_obj.start();*/
+                for (JImagePoint edge : edges) {
+                    int edgeX = (int) edge.x;
+                    int edgeY = (int) edge.y;
+                    g2d.drawLine(edgeX, edgeY, edgeX, edgeY);
+                }
             }
         }
 
@@ -285,8 +289,6 @@ public class JImageObjectPicker {
     private void selectSinglePoint(JImagePoint p, int radius_x, Color obj_color) {
         JImagePoint p_on_original = image_maths.getJImagePointOnOriginal(p);
 
-        int radius_y = image_maths.mapVal(radius_x, 0, image.getCurrentImageWidth(), 0, image.getCurrentImageHeight());
-
         /**
          * Here when drawing a circle, there are no two radii. But here we calculate 2 radii and add that to the dimensions with the intention of
          * calculating the starting point of the circle along x and y coordinates separately.
@@ -294,9 +296,8 @@ public class JImageObjectPicker {
          * will be incorrect.
          * Please check the contents of the paintComponent method for understanding.
          */
-        double obj_diameter_width = 2.0 * image_maths.mapVal((double) radius_x, 0.0, (double) image.getCurrentImageWidth(), 0.0, (double) image.getOriginalImageWidth());
-        double obj_diameter_height = 2.0 * image_maths.mapVal((double) radius_y, 0.0, (double) image.getCurrentImageHeight(), 0.0, (double) image.getOriginalImageHeight());
-        JImageDimension obj_dimensions = new JImageDimension(obj_diameter_width, obj_diameter_height);
+        double obj_diameter = 2.0 * image_maths.mapVal((double) radius_x, 0.0, (double) image.getCurrentImageWidth(), 0.0, (double) image.getOriginalImageWidth());
+        JImageDimension obj_dimensions = new JImageDimension(obj_diameter, obj_diameter);
 
         JImageObject object_new = new JImageObject(p_on_original, JImageObject.JIMAGE_OBJECT_ELLIPSE, obj_dimensions, obj_color);
         objects.add(object_new);
@@ -353,15 +354,34 @@ public class JImageObjectPicker {
          */
 
         JImageObject object_new = new JImageObject(seed_point_on_original, JImageObject.JIMAGE_OBJECT_DETECT, new JImageDimension(0.0, 0.0), obj_color);
-        object_new.setProperty("intelli_object", image_intelli);
-        object_new.setProperty("edge_object_color_ratio", String.valueOf(edge_object_color_ratio));
+        object_new.setProperty(JImageObject.CUSTOM_HIDDEN_PROPERTY_AUTO_DETECT_INTELLI_OBJ, image_intelli);
+        object_new.setProperty(JImageObject.CUSTOM_PROPERTY_AUTO_DETECT_EDGE_OBJECT_RATIO, String.valueOf(edge_object_color_ratio));
 
-        image_intelli.getEdgesFromSeed(image.getOriginalImage(), seed_point_on_original, edge_object_color_ratio);
+        // This line is used to fill the properties used in JImageIntelligence.getLastProperties()
+        byte raster_edges[][] = image_intelli.getEdgesFromSeed(image.getOriginalImageWithFilters(), seed_point_on_original, edge_object_color_ratio);
+
         Map<String, Object> detected_obj_props = image_intelli.getLastProperties();
         Object keys[] = detected_obj_props.keySet().toArray();
         for (Object key : keys) {
             object_new.setProperty(key.toString(), detected_obj_props.get(key.toString()));
         }
+
+        /* Setting hidden properties */
+
+        // Setting edges on original image
+        List<JImagePoint> edgePoints = new ArrayList<>();
+        for (int x = 0; x < raster_edges.length; x++) {
+            for (int y = 0; y < raster_edges[0].length; y++) {
+                if (raster_edges[x][y] == 1) {
+                    JImagePoint edgePoint = new JImagePoint(x, y);
+                    edgePoints.add(edgePoint);
+                }
+            }
+        }
+        object_new.setProperty(JImageObject.CUSTOM_HIDDEN_PROPERTY_AUTO_DETECT_EDGES_ON_ORIGINAL, edgePoints);
+
+        // Setting original image dimensions
+        object_new.setProperty(JImageObject.CUSTOM_HIDDEN_PROPERTY_IMAGE_DIMENSIONS, new JImageDimension(image.getOriginalImageWidth(), image.getOriginalImageHeight()));
 
         objects.add(object_new);
     }
@@ -473,8 +493,7 @@ public class JImageObjectPicker {
         for (JImageObject object : objects) {
             switch (object.object_type) {
                 case JImageObject.JIMAGE_OBJECT_ELLIPSE:
-
-                    break;
+                    // TODO: Distance to a point from the center of a circle and compare with the radius
                 case JImageObject.JIMAGE_OBJECT_SQUARE:
                 case JImageObject.JIMAGE_OBJECT_RECTANGLE:
                     if (SEARCH_MODE == SEARCH_MODE_POINT) {
@@ -500,6 +519,55 @@ public class JImageObjectPicker {
 
                     break;
                 case JImageObject.JIMAGE_OBJECT_DETECT:
+                    Map<String, Object> objProps = object.getObjectProperties();
+                    double edge_object_ratio = Double.parseDouble(objProps.get(JImageObject.CUSTOM_PROPERTY_AUTO_DETECT_EDGE_OBJECT_RATIO).toString());
+
+                    int seedX = (int)object.point.x;
+                    int seedY = (int)object.point.y;
+
+                    if (SEARCH_MODE == SEARCH_MODE_POINT) {
+                        if (seedX == pOnOriginal.x && seedY == pOnOriginal.y) {
+                            return object;
+                        }
+                    } else if (SEARCH_MODE == SEARCH_MODE_AREA) {
+                        /* Obtaining seed point Gray value */
+                        BufferedImage copiedImage = image.getOriginalImageWithFilters();
+                        JImageIntelligence imageIntelli = new JImageIntelligence(image);
+                        BufferedImage copiedGrayImage = imageIntelli.getGrayScale(copiedImage);
+                        int originalSeedGray = copiedGrayImage.getRGB(seedX, seedY);
+
+                        /* Obtaining clicked point Gray value */
+                        BufferedImage currentImage = image.getCurrentImage();
+                        int clickedPointGray = currentImage.getRGB((int)p.x, (int)p.y);
+
+                        /* Obtaining relative edge object ratio for the clicked point Gray value */
+                        double mappedEdgeObjectRatioForCP = image_maths.mapVal(edge_object_ratio, 0, originalSeedGray, 0, clickedPointGray);
+
+                        byte raster_edges[][] = imageIntelli.getEdgesFromSeed(image.getCurrentImage(), p, mappedEdgeObjectRatioForCP);
+                        List<JImagePoint> edgesFromSeedPoint = (List<JImagePoint>) objProps.get(JImageObject.CUSTOM_HIDDEN_PROPERTY_AUTO_DETECT_EDGES_LAST_REPAINT);
+                        for (int x = 0; x < raster_edges.length; x++) {
+                            for (int y = 0; y < raster_edges[0].length; y++) {
+                                if (raster_edges[x][y] == (byte)1) {
+                                    JImagePoint edgePoint = new JImagePoint(x, y);
+//                                    System.out.println(x+"\t"+y);
+
+                                    if (!edgesFromSeedPoint.contains(edgePoint)) {
+                                        return null;
+                                    }
+                                }
+                            }
+                        }
+
+//                        System.out.println("++++++++++++++++++++++++");
+                        for (JImagePoint edgeFromSeedPoint : edgesFromSeedPoint) {
+                            int x = (int)edgeFromSeedPoint.x;
+                            int y = (int)edgeFromSeedPoint.y;
+//                            System.out.println(x+"\t"+y);
+                        }
+
+//                        return null;
+                        return object;
+                    }
 
                     break;
             }
@@ -534,6 +602,15 @@ public class JImageObjectPicker {
     /**
      * Setter methods
      */
+
+    /**
+     * Sets the JImage which the current objects belong to.
+     * @param image The JImage which objects are related with.
+     */
+    public void setJImage(JImage image) {
+        this.image = image;
+        image_maths = image.getJImageMaths();
+    }
 
     /**
      * Sets the JImageObject at the given index

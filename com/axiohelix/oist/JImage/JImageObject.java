@@ -2,6 +2,7 @@ package com.axiohelix.oist.JImage;
 
 import java.awt.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class JImageObject {
@@ -40,8 +41,12 @@ public class JImageObject {
     // This is a special case where ALL_X and ALL_Y properties are overriden by SEED_X and SEED_Y
     public static final String PROPERTY_AUTO_DETECT_SEED_X = "real_seed_point_x";
     public static final String PROPERTY_AUTO_DETECT_SEED_Y = "real_seed_point_y";
-    public static final String CUSTOM_PROPERTY_AUTO_DETECT_INTELLI_OBJ = "intelli_object";
+    public static final String CUSTOM_HIDDEN_PROPERTY_AUTO_DETECT_INTELLI_OBJ = "intelli_object";
     public static final String CUSTOM_PROPERTY_AUTO_DETECT_EDGE_OBJECT_RATIO = "edge_object_color_ratio";
+    public static final String CUSTOM_HIDDEN_PROPERTY_AUTO_DETECT_EDGES_ON_ORIGINAL = "auto_detect_edges_original";
+    public static final String CUSTOM_HIDDEN_PROPERTY_AUTO_DETECT_EDGES_LAST_REPAINT = "auto_detect_edges_last_repaint";
+
+    public static final String CUSTOM_HIDDEN_PROPERTY_IMAGE_DIMENSIONS = "image_dimensions";
 
     /**
      * Following point is the center of the object. This contains its (x,y) coordinates.
@@ -112,8 +117,6 @@ public class JImageObject {
                 props.put(PROPERTY_AUTO_DETECT_SEED_X, String.valueOf(point.x));
                 props.put(PROPERTY_AUTO_DETECT_SEED_Y, String.valueOf(point.y));
 
-                //TODO: Add dimensions, area and other related properties for a detected object here
-
                 break;
         }
         props.putAll(object_custom_props);
@@ -139,6 +142,19 @@ public class JImageObject {
                 break;
             case JIMAGE_OBJECT_RECTANGLE:
                 x_min = point.x - (object_dimensions.width / 2.0);
+
+                break;
+            case JIMAGE_OBJECT_DETECT:
+                JImageDimension originalDimensions = (JImageDimension) object_custom_props.get(CUSTOM_HIDDEN_PROPERTY_IMAGE_DIMENSIONS);
+                List<JImagePoint> edges = (List<JImagePoint>) object_custom_props.get(CUSTOM_HIDDEN_PROPERTY_AUTO_DETECT_EDGES_ON_ORIGINAL);
+
+                x_min = originalDimensions.width;
+
+                for (JImagePoint edge : edges) {
+                    if (edge.x < x_min) {
+                        x_min = edge.x;
+                    }
+                }
 
                 break;
             default:
@@ -168,6 +184,19 @@ public class JImageObject {
                 x_max = point.x + (object_dimensions.width / 2.0);
 
                 break;
+            case JIMAGE_OBJECT_DETECT:
+                JImageDimension originalDimensions = (JImageDimension) object_custom_props.get(CUSTOM_HIDDEN_PROPERTY_IMAGE_DIMENSIONS);
+                List<JImagePoint> edges = (List<JImagePoint>) object_custom_props.get(CUSTOM_HIDDEN_PROPERTY_AUTO_DETECT_EDGES_ON_ORIGINAL);
+
+                x_max = 0;
+
+                for (JImagePoint edge : edges) {
+                    if (edge.x > x_max) {
+                        x_max = edge.x;
+                    }
+                }
+
+                break;
             default:
                 x_max = 0.0;
         }
@@ -193,6 +222,19 @@ public class JImageObject {
                 break;
             case JIMAGE_OBJECT_RECTANGLE:
                 y_min = point.y - (object_dimensions.height / 2.0);
+
+                break;
+            case JIMAGE_OBJECT_DETECT:
+                JImageDimension originalDimensions = (JImageDimension) object_custom_props.get(CUSTOM_HIDDEN_PROPERTY_IMAGE_DIMENSIONS);
+                List<JImagePoint> edges = (List<JImagePoint>) object_custom_props.get(CUSTOM_HIDDEN_PROPERTY_AUTO_DETECT_EDGES_ON_ORIGINAL);
+
+                y_min = originalDimensions.height;
+
+                for (JImagePoint edge : edges) {
+                    if (edge.y < y_min) {
+                        y_min = edge.y;
+                    }
+                }
 
                 break;
             default:
@@ -222,6 +264,19 @@ public class JImageObject {
                 y_max = point.y + (object_dimensions.height / 2.0);
 
                 break;
+            case JIMAGE_OBJECT_DETECT:
+                JImageDimension originalDimensions = (JImageDimension) object_custom_props.get(CUSTOM_HIDDEN_PROPERTY_IMAGE_DIMENSIONS);
+                List<JImagePoint> edges = (List<JImagePoint>) object_custom_props.get(CUSTOM_HIDDEN_PROPERTY_AUTO_DETECT_EDGES_ON_ORIGINAL);
+
+                y_max = 0;
+
+                for (JImagePoint edge : edges) {
+                    if (edge.y > y_max) {
+                        y_max = edge.y;
+                    }
+                }
+
+                break;
             default:
                 y_max = 0.0;
         }
@@ -230,8 +285,7 @@ public class JImageObject {
     }
 
     /**
-     * Sets a  property for an object.
-     *
+     * Sets a property for an object.
      * @param key   The identifier of the value to be added
      * @param value The value itself
      */

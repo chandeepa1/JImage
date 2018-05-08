@@ -35,6 +35,7 @@ public class JImageFilters {
         switch (filterType) {
             case GAMMA_CORRECTION:
                 int gammaValue = Integer.parseInt(methodArgs.get(0).toString());
+
                 return getGammaCorrected(onImage, gammaValue);
             case CONTRAST:
                 float scaleFactor = Float.parseFloat(methodArgs.get(0).toString());

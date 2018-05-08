@@ -43,7 +43,6 @@ public class JImageRenderer extends JPanel {
      * @param parentComponent The JComponent where the renderer should render itself.
      * @param startPoint The position on the parentComponent where the renderer's top left corner should be at
      */
-
     public void renderOnComponent(JComponent parentComponent, JImagePoint startPoint) {
         int startX = (int)startPoint.x;
         int startY = (int)startPoint.y;
@@ -72,7 +71,6 @@ public class JImageRenderer extends JPanel {
      * This method is used to update the viewport after making changes to the contents related to the image.
      * Works only if parentComponent is set.
      */
-
     public void refreshRenderer() {
         if (parentComponent != null) {
             parentComponent.remove(this);
