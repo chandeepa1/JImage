@@ -433,46 +433,41 @@ public class JImageIntelligence {
     public BufferedImage getAveragedImage(BufferedImage[] imageSet) throws Exception {
         int imageCount = imageSet.length;
 
-        if (imageCount > 1) {
-            for (int i = 1; i < imageCount; i++) {
-                if (imageSet[0].getWidth() != imageSet[i].getWidth() || imageSet[0].getHeight() != imageSet[i].getHeight()) {
-                    throw new Exception("All the images should be in the same dimensions to average them.");
-                }
+        for (int i = 1; i < imageCount; i++) {
+            if (imageSet[0].getWidth() != imageSet[i].getWidth() || imageSet[0].getHeight() != imageSet[i].getHeight()) {
+                throw new Exception("All the images should be in the same dimensions to average them.");
             }
+        }
 
-            int imageWidth = imageSet[0].getWidth();
-            int imageHeight = imageSet[0].getHeight();
+        int imageWidth = imageSet[0].getWidth();
+        int imageHeight = imageSet[0].getHeight();
 
-            BufferedImage outImage = new BufferedImage(imageWidth, imageHeight, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage outImage = new BufferedImage(imageWidth, imageHeight, BufferedImage.TYPE_INT_ARGB);
 
-            for (int x = 0; x < imageWidth; x++) {
-                for (int y = 0; y < imageHeight; y++) {
-                    int redSum = 0, greenSum = 0, blueSum = 0;
-                    for (int i = 0; i < imageCount; i++) {
-                        int rgb = imageSet[i].getRGB(x, y);
-                        int r = (rgb >> 16) & 0xFF;
-                        int g = (rgb >> 8) & 0xFF;
-                        int b = (rgb & 0xFF);
+        for (int x = 0; x < imageWidth; x++) {
+            for (int y = 0; y < imageHeight; y++) {
+                int redSum = 0, greenSum = 0, blueSum = 0;
+                for (int i = 0; i < imageCount; i++) {
+                    int rgb = imageSet[i].getRGB(x, y);
+                    int r = (rgb >> 16) & 0xFF;
+                    int g = (rgb >> 8) & 0xFF;
+                    int b = (rgb & 0xFF);
 
-                        redSum += r;
-                        greenSum += g;
-                        blueSum += b;
-                    }
-
-                    int redAvg = redSum / imageCount;
-                    int greenAvg = greenSum / imageCount;
-                    int blueAvg = blueSum / imageCount;
-
-                    int outPixel = 0xFF000000 | (redAvg << 16 | greenAvg << 8 | blueAvg);
-                    outImage.setRGB(x, y, outPixel);
+                    redSum += r;
+                    greenSum += g;
+                    blueSum += b;
                 }
-            }
 
-            return outImage;
+                int redAvg = redSum / imageCount;
+                int greenAvg = greenSum / imageCount;
+                int blueAvg = blueSum / imageCount;
+
+                int outPixel = 0xFF000000 | (redAvg << 16 | greenAvg << 8 | blueAvg);
+                outImage.setRGB(x, y, outPixel);
+            }
         }
-        else {
-            throw new Exception("More than 1 image is required to average.");
-        }
+
+        return outImage;
     }
 
     /* End of Image Averaging methods */
